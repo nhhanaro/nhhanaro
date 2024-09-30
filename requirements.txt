@@ -2,5 +2,5 @@ requests==2.31.0
 beautifulsoup4==4.12.2
 chardet==5.1.0
 selenium==4.11.2
-undetected-chromedriver==3.4.7b1
 pytz==2023.3
+git+https://github.com/ultrafunkamsterdam/undetected-chromedriver@3.4.7#egg=undetected-chromedriver
