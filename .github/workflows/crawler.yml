@@ -34,6 +34,7 @@ jobs:
 
     - name: Commit and push changes
       run: |
-        git add data.json
-        git commit -m "Update data.json with crawled data"
+        git add data.json crawled_data.db  # 모든 변경된 파일을 추가
+        git commit -m "Update data.json and database"
         git push https://x-access-token:${{ secrets.PAT }}@github.com/nhhanaro/nhhanaro.git master
+
