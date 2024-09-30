@@ -11,17 +11,12 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3  # 업데이트된 버전
+      uses: actions/checkout@v3  # 최신 버전으로 업데이트
 
     - name: Set up Python
-      uses: actions/setup-python@v4  # 업데이트된 버전
+      uses: actions/setup-python@v4  # 최신 버전으로 업데이트
       with:
         python-version: '3.x'
-        
-    - name: Set up Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: 16
 
     - name: Install dependencies
       run: |
