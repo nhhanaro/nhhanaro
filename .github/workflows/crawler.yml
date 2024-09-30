@@ -23,19 +23,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Set up Chrome
-        uses: browser-actions/setup-chrome@v1
-        with:
-          chrome-version: "latest"
-
-      - name: Set up ChromeDriver
-        uses: nanasess/setup-chromedriver@v1
-        with:
-          chromedriver-version: "latest"
-
       - name: Run crawler
-        env:
-          CHROMEDRIVER: ${{ steps.chromedriver.outputs.chromedriver-path }}
         run: |
           python crawler.py  # 실제 스크립트 이름으로 변경하세요
 
