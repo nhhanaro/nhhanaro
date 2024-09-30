@@ -1,22 +1,21 @@
-name: Crawl and Deploy to GitHub Pages
+name: Crawler Workflow
 
 on:
   schedule:
-    - cron: "0 */3 * * *" # 매 3시간마다 실행
-  workflow_dispatch: # 수동 실행 허용
+    - cron: "0 */3 * * *" # This runs every 3 hours
+  workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
-  crawl_and_deploy:
+  crawl:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v2
         with:
-          python-version: "3.8"
+          python-version: "3.9" # Specify the Python version you want to use
 
       - name: Install dependencies
         run: |
@@ -24,24 +23,4 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run crawler
-        run: |
-          python crawler.py  # 실제 스크립트 이름으로 변경하세요
-
-      - name: Commit and push changes
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add data.json crawled_data.db
-          git commit -m "Update data.json and database with latest crawling data"
-          git push
-        env:
-          GIT_AUTHOR_NAME: GitHub Actions
-          GIT_AUTHOR_EMAIL: actions@github.com
-          GIT_COMMITTER_NAME: GitHub Actions
-          GIT_COMMITTER_EMAIL: actions@github.com
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./ # 배포할 디렉토리 (필요에 따라 수정)
+        run: python crawler.py
