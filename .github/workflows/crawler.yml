@@ -32,4 +32,4 @@ jobs:
         git config --local user.email "you@example.com"
         git add data.json
         git commit -m "Update data.json with crawled data" || echo "No changes to commit"
-        git push
+        git push https://x-access-token:${{ secrets.PAT }}@github.com/nhhanaro/nhhanaro.git HEAD:master
