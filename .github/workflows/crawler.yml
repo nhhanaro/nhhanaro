@@ -1,0 +1,27 @@
+name: Web Scraping
+
+on:
+  schedule:
+    - cron: '5 9,15,21 * * *'  # 매일 09:05, 15:05, 21:05에 실행
+  workflow_dispatch:  # 수동 실행 가능
+
+jobs:
+  run-crawler:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'  # 원하는 Python 버전 설정
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 chardet
+
+      - name: Run crawler
+        run: python crawler.py
