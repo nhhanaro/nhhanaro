@@ -22,13 +22,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y wget unzip xvfb libxi6 libgconf-2-4
-          # 최신 버전의 Chrome 설치
-          wget -O /tmp/google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo apt install -y /tmp/google-chrome.deb
+          # 안정적인 버전의 Chrome 설치 (예: 버전 117)
+          wget https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_117.0.5938.62-1_amd64.deb -O /tmp/chrome.deb
+          sudo apt install -y /tmp/chrome.deb
 
           # Python 패키지 설치
           python -m pip install --upgrade pip
-          pip install -r requirements.txt  # requirements.txt에 있는 모든 패키지 설치
+          pip install -r requirements.txt
 
       - name: Run crawler
         env:
