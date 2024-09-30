@@ -25,12 +25,12 @@ jobs:
       - name: Run crawler
         run: python crawler.py
 
-      - name: Commit and push data.json
+      - name: Commit and push crawled_data.db and data.json
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
-          git add data.json
-          git commit -m "Update data.json with new data"
+          git add crawled_data.db data.json
+          git commit -m "Update database and JSON data"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Use GitHub token for authentication
