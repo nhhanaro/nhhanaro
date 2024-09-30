@@ -7,6 +7,8 @@ import sqlite3
 import json
 import time
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import undetected_chromedriver as uc
 import os
 import shutil
@@ -69,8 +71,15 @@ def crawl_wooticket():
             # 페이지 열기
             driver.get(url)
 
-            # 페이지 로딩 대기
-            time.sleep(20)
+            # 명시적 대기 설정
+            wait = WebDriverWait(driver, 20)  # 최대 20초 대기
+
+            try:
+                # '농협하나로상품권(10만원권)' 텍스트를 포함한 div 요소가 나타날 때까지 대기
+                wait.until(EC.presence_of_element_located((By.XPATH, "//div[contains(text(), '농협하나로상품권(10만원권)')]")))
+            except Exception as e:
+                logging.error(f"명시적 대기 중 오류 발생: {e}")
+                continue  # 다음 시도로 넘어감
 
             # 모든 td 태그 찾기
             tds = driver.find_elements(By.TAG_NAME, 'td')
