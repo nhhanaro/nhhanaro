@@ -7,6 +7,7 @@ import pytz
 import sqlite3
 import json
 import time
+from selenium.webdriver.chrome.service import Service  # 추가
 from selenium.webdriver.common.by import By
 import undetected_chromedriver as uc
 
@@ -50,7 +51,10 @@ def crawl_wooticket():
     options.add_argument("--disable-notifications")
     options.add_argument("--incognito")
 
-    driver = SafeChrome(options=options)
+    # Service 객체로 ChromeDriver 경로 설정
+    service = Service()  # ChromeDriver 경로를 자동으로 탐색
+
+    driver = uc.Chrome(service=service, options=options)
 
     try:
         # 페이지 열기
