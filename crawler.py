@@ -3,6 +3,7 @@ import chardet
 from bs4 import BeautifulSoup
 import re
 import datetime
+import pytz
 import sqlite3
 import json
 import time
@@ -106,12 +107,19 @@ def crawl_wooh():
         return blue_text  # 가격 반환
     return None  # 정보 없음
 
+# 한국 시간 (KST) 얻기
+def get_kst_time():
+    utc_now = datetime.datetime.utcnow()
+    kst = pytz.timezone('Asia/Seoul')
+    kst_now = utc_now.astimezone(kst)
+    return kst_now.strftime("%Y-%m-%d %H:%M")
+
 # 데이터베이스에 크롤링 결과 저장
-def save_to_db(now, wooh_price, wooticket_price):
+def save_to_db(wooh_price, wooticket_price):
     conn = sqlite3.connect('crawled_data.db')
     cursor = conn.cursor()
     cursor.execute('INSERT INTO price_data (조회_시간, 우현상품권, 우천상품권) VALUES (?, ?, ?)',
-                   (now, wooh_price, wooticket_price))
+                   (get_kst_time(), wooh_price, wooticket_price))
     conn.commit()
     conn.close()
 
@@ -143,12 +151,9 @@ create_db()
 wooticket_result = crawl_wooticket()
 wooh_result = crawl_wooh()
 
-# 현재 날짜 및 시간 추가
-now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-
 # 데이터베이스에 결과 저장
 if wooticket_result and wooh_result:
-    save_to_db(now, wooh_result, wooticket_result)
+    save_to_db(wooh_result, wooticket_result)
 else:
     print(f"Failed to fetch data: wooh_result={wooh_result}, wooticket_result={wooticket_result}")
 
