@@ -21,67 +21,78 @@ def create_db():
     conn.commit()
     conn.close()
 
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-}
-
-response = requests.get(url, headers=headers)
-
-
 # 우천상품권 (wooticket) 크롤링
 def crawl_wooticket():
     url = "http://www.wooticket.com/price_status.php"
-    response = requests.get(url)
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
 
-    # 페이지 인코딩 감지 및 설정
-    encoding = chardet.detect(response.content)['encoding']
-    response.encoding = encoding
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
 
-    # HTML 파싱
-    soup = BeautifulSoup(response.text, 'html.parser')
+        # 페이지 인코딩 감지 및 설정
+        encoding = chardet.detect(response.content)['encoding']
+        response.encoding = encoding
 
-    # 모든 td 태그를 찾음
-    tds = soup.find_all('td')
+        # HTML 파싱
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-    # '농협하나로상품권(10만원권)' 텍스트를 포함한 td 찾기
-    for i, td in enumerate(tds):
-        div = td.find('div')
-        if div and '농협하나로상품권(10만원권)' in div.get_text():
-            # 바로 다음 td에서 매입가 추출
-            next_td = tds[i + 1]
-            price_div = next_td.find('div')
-            if price_div:
-                # 공백과 줄바꿈을 모두 제거하고 연속된 공백을 하나로 축소
-                price = re.sub(r'\s+', ' ', price_div.get_text()).strip()
-                # (7%) 제거
-                price = price.split(' ')[0]  # 첫 번째 부분만 취득 (가격만)
-                return price  # 가격 반환
+        # 모든 td 태그를 찾음
+        tds = soup.find_all('td')
+
+        # '농협하나로상품권(10만원권)' 텍스트를 포함한 td 찾기
+        for i, td in enumerate(tds):
+            div = td.find('div')
+            if div and '농협하나로상품권(10만원권)' in div.get_text():
+                # 바로 다음 td에서 매입가 추출
+                next_td = tds[i + 1]
+                price_div = next_td.find('div')
+                if price_div:
+                    # 공백과 줄바꿈을 모두 제거하고 연속된 공백을 하나로 축소
+                    price = re.sub(r'\s+', ' ', price_div.get_text()).strip()
+                    # (7%) 제거
+                    price = price.split(' ')[0]  # 첫 번째 부분만 취득 (가격만)
+                    return price  # 가격 반환
+    except requests.RequestException as e:
+        print(f"Failed to crawl wooticket: {e}")
+    
     return None  # 정보 없음
 
 # 우현상품권 (wooh.co.kr) 크롤링
 def crawl_wooh():
     url = "https://www.wooh.co.kr/shop/item.php?it_id=1595825248"
-    response = requests.get(url)
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
 
-    # 페이지 인코딩 감지 및 설정
-    encoding = chardet.detect(response.content)['encoding']
-    response.encoding = encoding
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
 
-    # HTML 파싱
-    soup = BeautifulSoup(response.text, 'html.parser')
+        # 페이지 인코딩 감지 및 설정
+        encoding = chardet.detect(response.content)['encoding']
+        response.encoding = encoding
 
-    # sit_ov_tbl 클래스 테이블 찾기
-    table = soup.find('table', class_='sit_ov_tbl')
+        # HTML 파싱
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-    # color="#1560ed"인 font 태그 찾기
-    blue_font = table.find('font', color='#1560ed')
-    if blue_font:
-        blue_text = blue_font.get_text().strip().replace('원', '')  # '원' 제거
-        # 바로 밑의 color="#494949"인 font 태그 찾기
-        grey_font = blue_font.find_next('font', color='#494949')
-        if grey_font:
-            grey_text = grey_font.get_text().strip()
-            return blue_text  # 가격 반환
+        # sit_ov_tbl 클래스 테이블 찾기
+        table = soup.find('table', class_='sit_ov_tbl')
+
+        # color="#1560ed"인 font 태그 찾기
+        blue_font = table.find('font', color='#1560ed')
+        if blue_font:
+            blue_text = blue_font.get_text().strip().replace('원', '')  # '원' 제거
+            # 바로 밑의 color="#494949"인 font 태그 찾기
+            grey_font = blue_font.find_next('font', color='#494949')
+            if grey_font:
+                grey_text = grey_font.get_text().strip()
+                return blue_text  # 가격 반환
+    except requests.RequestException as e:
+        print(f"Failed to crawl wooh: {e}")
+    
     return None  # 정보 없음
 
 # 데이터베이스에 크롤링 결과 저장
@@ -127,6 +138,8 @@ now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 # 데이터베이스에 결과 저장
 if wooticket_result and wooh_result:
     save_to_db(now, wooh_result, wooticket_result)
+else:
+    print(f"Failed to fetch data: wooh_result={wooh_result}, wooticket_result={wooticket_result}")
 
 # JSON 파일로 내보내기
 export_to_json()
