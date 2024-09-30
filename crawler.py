@@ -108,8 +108,8 @@ def crawl_wooh():
 
 # 한국 시간 (UTC + 9)으로 현재 시간 반환
 def get_kst_time():
-    utc_now = datetime.datetime.utcnow()  # UTC 기준 현재 시간
-    kst_now = utc_now + datetime.timedelta(hours=9)  # 한국 시간 = UTC + 9
+    utc_now = datetime.datetime.utcnow()  # 현재 UTC 시간 가져오기
+    kst_now = utc_now + datetime.timedelta(hours=9)  # UTC + 9 = KST
     return kst_now.strftime("%Y-%m-%d %H:%M")
 
 # 데이터베이스에 크롤링 결과 저장
