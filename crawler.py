@@ -56,7 +56,7 @@ def crawl_wooticket():
         driver.get(url)
 
         # 페이지 로딩 대기
-        time.sleep(2)
+        time.sleep(10)
 
         # 모든 td 태그 찾기
         tds = driver.find_elements(By.TAG_NAME, 'td')
