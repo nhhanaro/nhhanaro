@@ -60,7 +60,7 @@ def crawl_wooticket():
     options.add_argument("--disable-notifications")
     options.add_argument("--incognito")
 
-    max_retries = 3  # 최대 시도 횟수
+    max_retries = 5  # 최대 시도 횟수
     retry_delay = 15  # 재시도 간격 (초)
 
     for attempt in range(1, max_retries + 1):
@@ -70,7 +70,7 @@ def crawl_wooticket():
             driver.get(url)
 
             # 페이지 로딩 대기
-            time.sleep(2)
+            time.sleep(20)
 
             # 모든 td 태그 찾기
             tds = driver.find_elements(By.TAG_NAME, 'td')
