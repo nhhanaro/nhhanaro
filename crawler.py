@@ -25,7 +25,13 @@ def create_db():
 # 우천상품권 (wooticket) 크롤링
 def crawl_wooticket():
     url = "http://www.wooticket.com/price_status.php"
-    response = requests.get(url)
+    
+    # User-Agent 설정
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+    }
+    
+    response = requests.get(url, headers=headers)
 
     # 페이지 인코딩 감지 및 설정
     encoding = chardet.detect(response.content)['encoding']
@@ -57,7 +63,13 @@ def crawl_wooticket():
 # 우현상품권 (wooh.co.kr) 크롤링
 def crawl_wooh():
     url = "https://www.wooh.co.kr/shop/item.php?it_id=1595825248"
-    response = requests.get(url)
+    
+    # User-Agent 설정
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+    }
+
+    response = requests.get(url, headers=headers)
 
     # 페이지 인코딩 감지 및 설정
     encoding = chardet.detect(response.content)['encoding']
