@@ -15,7 +15,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4  # 최신 버전으로 업데이트
         with:
-          python-version: '3.x'  # 원하는 파이썬 버전 설정
+          python-version: '3.8'  # 원하는 파이썬 버전 설정
       
       - name: Install dependencies
         run: |
