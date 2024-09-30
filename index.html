@@ -3,13 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NH GIFT CARD NOW</title>
+    <title>Data Visualization</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <meta http-equiv="refresh" content="60"> <!-- 60초마다 페이지 새로고침 -->
-    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        /* 반응형 디자인을 위한 설정 */
+        @media (max-width: 600px) {
+            th, td {
+                padding: 8px;
+            }
+
+            canvas {
+                width: 100% !important;
+                height: auto !important;
+            }
+        }
+
+        /* 큰 화면에서 보기 좋도록 그래프 크기 설정 */
+        @media (min-width: 601px) {
+            canvas {
+                width: 100% !important;
+                height: 400px !important;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>NH GIFT CARD NOW</h1>
+    <h1>Price Data Visualization</h1>
 
     <!-- JSON 데이터를 표로 보여줄 부분 -->
     <table id="dataTable">
@@ -24,70 +67,106 @@
     </table>
 
     <!-- 그래프를 그릴 부분 -->
-    <canvas id="priceChart" width="400" height="200"></canvas>
+    <canvas id="priceChart"></canvas>
 
     <script>
-        // JSON 파일 불러오기
-        fetch('data.json')
-            .then(response => response.json())
-            .then(data => {
-                // 데이터를 표로 출력
-                const tableBody = document.querySelector('#dataTable tbody');
-                data.forEach(entry => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${entry.조회_시간}</td>
-                        <td>${entry.우현상품권}</td>
-                        <td>${entry.우천상품권}</td>
-                    `;
-                    tableBody.appendChild(row);
-                });
+        // 날짜별로 가장 첫 번째 데이터만 가져오는 함수
+        function filterFirstEntryPerDay(data) {
+            const filteredData = [];
+            const seenDates = new Set();
 
-                // Chart.js를 사용하여 그래프 그리기
-                const ctx = document.getElementById('priceChart').getContext('2d');
-                const labels = data.map(entry => entry.조회_시간);
-                const woohPrices = data.map(entry => parseInt(entry.우현상품권.replace(/,/g, '')));
-                const wooticketPrices = data.map(entry => parseInt(entry.우천상품권.replace(/,/g, '')));
+            data.forEach(entry => {
+                const date = entry.조회_시간.split(' ')[0]; // 시간 정보 제거하고 날짜만 가져옴
+                if (!seenDates.has(date)) {
+                    seenDates.add(date);
+                    filteredData.push(entry);  // 첫 번째 데이터를 저장
+                }
+            });
 
-                const priceChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            {
-                                label: '우현상품권 가격',
-                                data: woohPrices,
-                                borderColor: 'blue',
-                                fill: false
-                            },
-                            {
-                                label: '우천상품권 가격',
-                                data: wooticketPrices,
-                                borderColor: 'green',
-                                fill: false
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: '조회 시간'
+            return filteredData;
+        }
+
+        // 데이터의 마지막 10개를 가져오는 함수
+        function getLast10Entries(data) {
+            return data.slice(-10); // 마지막 10개 데이터만 추출
+        }
+
+        // 데이터를 로드하고 표와 차트를 업데이트하는 함수
+        function loadData() {
+            fetch('data.json')
+                .then(response => response.json())
+                .then(data => {
+                    // 날짜별로 가장 빠른 데이터를 가져옴
+                    const filteredData = filterFirstEntryPerDay(data);
+
+                    // 테이블에 표시할 데이터 (최신 10개만 표시)
+                    const last10Entries = getLast10Entries(filteredData);
+                    const tableBody = document.querySelector('#dataTable tbody');
+                    tableBody.innerHTML = '';  // 기존 데이터를 지움
+                    last10Entries.forEach(entry => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${entry.조회_시간}</td>
+                            <td>${entry.우현상품권}</td>
+                            <td>${entry.우천상품권}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+
+                    // Chart.js를 사용하여 전체 데이터로 그래프 그리기
+                    const ctx = document.getElementById('priceChart').getContext('2d');
+                    const labels = filteredData.map(entry => entry.조회_시간.split(' ')[0]); // 날짜만 사용
+                    const woohPrices = filteredData.map(entry => parseInt(entry.우현상품권.replace(/,/g, '')));
+                    const wooticketPrices = filteredData.map(entry => parseInt(entry.우천상품권.replace(/,/g, '')));
+
+                    if (window.priceChart) {
+                        window.priceChart.destroy();  // 기존 차트를 지움
+                    }
+
+                    window.priceChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: '우현상품권 가격',
+                                    data: woohPrices,
+                                    borderColor: 'blue',
+                                    fill: false
+                                },
+                                {
+                                    label: '우천상품권 가격',
+                                    data: wooticketPrices,
+                                    borderColor: 'green',
+                                    fill: false
                                 }
-                            },
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: '가격 (원)'
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: '조회 시간'
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: '가격 (원)'
+                                    }
                                 }
                             }
                         }
-                    }
-                });
-            })
-            .catch(error => console.error('Error loading data:', error));
+                    });
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        // 1시간마다 데이터를 새로 불러와서 업데이트
+        setInterval(loadData, 3600000);  // 1시간마다 새로고침
+        loadData();  // 페이지 로드 시 즉시 데이터를 로드
     </script>
 </body>
 </html>
