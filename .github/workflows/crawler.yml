@@ -3,7 +3,7 @@ name: Run Crawler
 on:
   schedule:
     - cron: '5 9,15,21 * * *'  # 매일 09:05, 15:05, 21:05에 실행
-  workflow_dispatch:  # 수동 실행을 위한 트리거
+  workflow_dispatch:  # 수동 실행 가능
 
 jobs:
   run-crawler:
@@ -11,10 +11,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v3  # 최신 버전으로 업데이트
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v4  # 최신 버전으로 업데이트
       with:
         python-version: '3.x'
 
@@ -24,17 +24,29 @@ jobs:
         pip install requests beautifulsoup4 chardet
 
     - name: Run crawler
-      run: python crawler.py
-
-    - name: Pull from remote repository
+      env:  # 환경 변수 설정
+        PAT: ${{ secrets.PAT }}  # Personal Access Token을 환경 변수로 설정
       run: |
-        git config --local user.email "your_email@example.com"
-        git config --local user.name "Your Name"
-        git pull origin master  # 리모트에서 최신 변경 사항 가져오기
+        git config --global user.name "Your Name"  # Git 사용자 이름 설정
+        git config --global user.email "you@example.com"  # Git 사용자 이메일 설정
+        python crawler.py  # 크롤러 실행
 
     - name: Commit and push changes
+      env:  # 환경 변수 설정
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub 토큰
       run: |
-        git add data.json crawled_data.db  # 모든 변경된 파일을 추가
-        git commit -m "Update data.json and database"
-        git push https://x-access-token:${{ secrets.PAT }}@github.com/nhhanaro/nhhanaro.git master
+        git add data.json crawled_data.db  # 변경된 파일 추가
+        git commit -m "Update data.json and crawled_data.db with crawled data" || echo "No changes to commit"
+        git push https://x-access-token:${{ secrets.PAT }}@github.com/nhhanaro/nhhanaro.git HEAD:master  # 변경사항 푸시
 
+    - name: Upload data.json
+      uses: actions/upload-artifact@v3
+      with:
+        name: data-json
+        path: data.json
+
+    - name: Upload crawled_data.db
+      uses: actions/upload-artifact@v3
+      with:
+        name: crawled-data-db
+        path: crawled_data.db
