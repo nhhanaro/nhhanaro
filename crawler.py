@@ -8,6 +8,17 @@ import json
 import time
 from selenium.webdriver.common.by import By
 import undetected_chromedriver as uc
+import os
+import shutil
+import logging
+
+# 로깅 설정
+logging.basicConfig(level=logging.INFO)
+
+# undetected-chromedriver 캐시 삭제
+uc_cache_dir = os.path.expanduser('~/.local/share/undetected_chromedriver')
+if os.path.exists(uc_cache_dir):
+    shutil.rmtree(uc_cache_dir)
 
 # SQLite 데이터베이스 연결 및 테이블 생성
 def create_db():
@@ -49,9 +60,8 @@ def crawl_wooticket():
     options.add_argument("--disable-notifications")
     options.add_argument("--incognito")
 
-    driver = SafeChrome(options=options)
-
     try:
+        driver = SafeChrome(options=options)
         # 페이지 열기
         driver.get(url)
 
@@ -75,10 +85,16 @@ def crawl_wooticket():
                         price = price.split(' ')[0]  # 첫 번째 부분만 취득 (가격만)
                         return price  # 가격 반환
             except Exception as e:
+                logging.error(f"td 요소 처리 중 오류 발생: {e}")
                 continue
+    except Exception as e:
+        logging.error(f"crawl_wooticket에서 오류 발생: {e}")
     finally:
         # 오류 여부와 상관없이 드라이버 종료
-        driver.quit()
+        try:
+            driver.quit()
+        except Exception as e:
+            logging.error(f"드라이버 종료 중 오류 발생: {e}")
 
     return None  # 정보 없음
 
@@ -87,23 +103,27 @@ def crawl_wooh():
     time.sleep(2)  # 요청 사이에 2초 대기
     url = "https://www.wooh.co.kr/shop/item.php?it_id=1595825248"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)'}
-    response = requests.get(url, headers=headers)
+    try:
+        response = requests.get(url, headers=headers)
 
-    # 페이지 인코딩 감지 및 설정
-    encoding = chardet.detect(response.content)['encoding']
-    response.encoding = encoding
+        # 페이지 인코딩 감지 및 설정
+        encoding = chardet.detect(response.content)['encoding']
+        response.encoding = encoding
 
-    # HTML 파싱
-    soup = BeautifulSoup(response.text, 'html.parser')
+        # HTML 파싱
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-    # sit_ov_tbl 클래스 테이블 찾기
-    table = soup.find('table', class_='sit_ov_tbl')
+        # sit_ov_tbl 클래스 테이블 찾기
+        table = soup.find('table', class_='sit_ov_tbl')
 
-    # color="#1560ed"인 font 태그 찾기
-    blue_font = table.find('font', color='#1560ed')
-    if blue_font:
-        blue_text = blue_font.get_text().strip().replace('원', '')  # '원' 제거
-        return blue_text  # 가격 반환
+        # color="#1560ed"인 font 태그 찾기
+        blue_font = table.find('font', color='#1560ed')
+        if blue_font:
+            blue_text = blue_font.get_text().strip().replace('원', '')  # '원' 제거
+            return blue_text  # 가격 반환
+    except Exception as e:
+        logging.error(f"crawl_wooh에서 오류 발생: {e}")
+
     return None  # 정보 없음
 
 # 데이터베이스에 크롤링 결과 저장
@@ -136,21 +156,22 @@ def export_to_json():
 
     conn.close()
 
-# 데이터베이스 생성
-create_db()
+if __name__ == "__main__":
+    # 데이터베이스 생성
+    create_db()
 
-# 크롤링 결과
-wooticket_result = crawl_wooticket()
-wooh_result = crawl_wooh()
+    # 크롤링 결과
+    wooticket_result = crawl_wooticket()
+    wooh_result = crawl_wooh()
 
-# 현재 날짜 및 시간 추가
-now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    # 현재 날짜 및 시간 추가
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
-# 데이터베이스에 결과 저장
-if wooticket_result and wooh_result:
-    save_to_db(now, wooh_result, wooticket_result)
-else:
-    print(f"Failed to fetch data: wooh_result={wooh_result}, wooticket_result={wooticket_result}")
+    # 데이터베이스에 결과 저장
+    if wooticket_result and wooh_result:
+        save_to_db(now, wooh_result, wooticket_result)
+    else:
+        logging.error(f"Failed to fetch data: wooh_result={wooh_result}, wooticket_result={wooticket_result}")
 
-# JSON 파일로 내보내기
-export_to_json()
+    # JSON 파일로 내보내기
+    export_to_json()

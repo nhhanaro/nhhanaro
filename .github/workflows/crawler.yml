@@ -2,7 +2,7 @@ name: Run Crawler
 
 on:
   schedule:
-    - cron: "0 0,6,12,18 * * *" # 매일 09:00, 15:00, 21:00에 실행
+    - cron: "0 0,6,12,18 * * *" # 매일 00:00, 06:00, 12:00, 18:00에 실행
   workflow_dispatch: # 수동 실행 가능
 
 jobs:
@@ -38,6 +38,8 @@ jobs:
         run: |
           git config --global user.name "Your Name"  # Git 사용자 이름 설정
           git config --global user.email "you@example.com"  # Git 사용자 이메일 설정
+          # undetected-chromedriver 캐시 삭제
+          rm -rf ~/.local/share/undetected_chromedriver/
           python crawler.py  # 크롤러 실행
 
       - name: Commit and push changes
