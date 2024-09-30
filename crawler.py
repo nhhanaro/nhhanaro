@@ -156,6 +156,13 @@ def export_to_json():
 
     conn.close()
 
+# 한국 시간으로 현재 시간을 얻는 함수
+def get_korean_time():
+    now = datetime.datetime.utcnow()
+    timestamp = int(now.timestamp()) + 9 * 3600  # 9시간(초 단위) 추가
+    korean_time = datetime.datetime.fromtimestamp(timestamp)
+    return korean_time.strftime("%Y-%m-%d %H:%M")
+
 if __name__ == "__main__":
     # 데이터베이스 생성
     create_db()
@@ -164,8 +171,8 @@ if __name__ == "__main__":
     wooticket_result = crawl_wooticket()
     wooh_result = crawl_wooh()
 
-    # 현재 날짜 및 시간 추가
-    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    # 현재 날짜 및 시간 (한국 시간으로 변환)
+    now = get_korean_time()
 
     # 데이터베이스에 결과 저장
     if wooticket_result and wooh_result:
