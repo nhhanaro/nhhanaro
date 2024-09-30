@@ -25,14 +25,13 @@ def create_db():
     conn.commit()
     conn.close()
 
-
 # 우천상품권 (wooticket) 크롤링 using Selenium과 undetected-chromedriver
 def crawl_wooticket():
     url = "http://www.wooticket.com/price_status.php"
 
     # undetected-chromedriver 옵션 설정
     options = uc.ChromeOptions()
-    options.add_argument('--headless=new')  # 헤드리스 모드 설정 (DeprecationWarning 제거)
+    options.add_argument('--headless')  # 헤드리스 모드 설정
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-gpu')
@@ -77,7 +76,7 @@ def crawl_wooticket():
 
     return None  # 정보 없음
 
-# 우현상품권 (wooh.co.kr) 크롤링
+# 우현상품권 (wooh.co.kr) 크롤링 (기존 방식 유지)
 def crawl_wooh():
     time.sleep(2)  # 요청 사이에 2초 대기
     url = "https://www.wooh.co.kr/shop/item.php?it_id=1595825248"
