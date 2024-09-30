@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NH GIFT CARD NOW(10만원)</title>
+    <title>NH GIFT CARD(10만원)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -52,7 +52,7 @@
     </style>
 </head>
 <body>
-    <h1>NH GIFT CARD NOW(10만원)</h1>
+    <h1>NH GIFT CARD(10만원)</h1>
 
     <!-- JSON 데이터를 표로 보여줄 부분 -->
     <table id="dataTable">
@@ -70,55 +70,22 @@
     <canvas id="priceChart"></canvas>
 
     <script>
-        // 날짜별로 가장 첫 번째 데이터만 가져오는 함수
-        function filterFirstEntryPerDay(data) {
-            const filteredData = [];
-            const seenDates = new Set();
-
-            data.forEach(entry => {
-                const date = entry.조회_시간.split(' ')[0]; // 시간 정보 제거하고 날짜만 가져옴
-                if (!seenDates.has(date)) {
-                    seenDates.add(date);
-                    filteredData.push(entry);  // 첫 번째 데이터를 저장
-                }
-            });
-
-            return filteredData;
-        }
-
-        // 데이터의 마지막 10개를 가져오는 함수
-        function getLast10Entries(data) {
-            return data.slice(-10); // 마지막 10개 데이터만 추출
-        }
-
         // 데이터를 로드하고 표와 차트를 업데이트하는 함수
         function loadData() {
             fetch('data.json')
                 .then(response => response.json())
                 .then(data => {
-                    // 날짜별로 가장 빠른 데이터를 가져옴
-                    const filteredData = filterFirstEntryPerDay(data);
+                    if (!data || data.length === 0) {
+                        console.error('데이터가 없습니다.');
+                        return;
+                    }
 
-                    // 테이블에 표시할 데이터 (최신 10개만 표시)
-                    const last10Entries = getLast10Entries(filteredData);
-                    const tableBody = document.querySelector('#dataTable tbody');
-                    tableBody.innerHTML = '';  // 기존 데이터를 지움
-                    last10Entries.forEach(entry => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${entry.조회_시간}</td>
-                            <td>${entry.우현상품권}</td>
-                            <td>${entry.우천상품권}</td>
-                        `;
-                        tableBody.appendChild(row);
-                    });
+                    // 그래프는 모든 데이터를 그대로 사용하여 그리기
+                    const labels = data.map(entry => entry.조회_시간); // 모든 시간 데이터를 사용
+                    const woohPrices = data.map(entry => parseInt(entry.우현상품권.replace(/,/g, '')));
+                    const wooticketPrices = data.map(entry => parseInt(entry.우천상품권.replace(/,/g, '')));
 
-                    // Chart.js를 사용하여 전체 데이터로 그래프 그리기
                     const ctx = document.getElementById('priceChart').getContext('2d');
-                    const labels = filteredData.map(entry => entry.조회_시간.split(' ')[0]); // 날짜만 사용
-                    const woohPrices = filteredData.map(entry => parseInt(entry.우현상품권.replace(/,/g, '')));
-                    const wooticketPrices = filteredData.map(entry => parseInt(entry.우천상품권.replace(/,/g, '')));
-
                     if (window.priceChart) {
                         window.priceChart.destroy();  // 기존 차트를 지움
                     }
@@ -160,8 +127,53 @@
                             }
                         }
                     });
+
+                    // 가장 최근 일자의 가장 최신 데이터 가져오기
+                    const latestEntry = data[data.length - 1];
+                    const latestDate = latestEntry.조회_시간.split(' ')[0];
+
+                    // 최근 일자의 전일로부터 10일까지의 15:00 ~ 15:59 사이의 데이터 가져오기
+                    const filteredForTable = [];
+                    let daysCount = 0;
+                    let currentDate = new Date(latestDate);
+                    currentDate.setDate(currentDate.getDate() - 1); // 전일로 설정
+
+                    while (daysCount < 10) {
+                        const dateString = currentDate.toISOString().split('T')[0];
+
+                        // 해당 날짜의 15:00 ~ 15:59 사이의 데이터 필터링
+                        const dayData = data.filter(entry => {
+                            const [datePart, timePart] = entry.조회_시간.split(' ');
+                            return datePart === dateString && timePart >= '15:00' && timePart <= '15:59';
+                        });
+
+                        if (dayData.length > 0) {
+                            // 해당 날짜의 마지막 데이터를 사용
+                            filteredForTable.unshift(dayData[dayData.length - 1]);
+                            daysCount++;
+                        }
+
+                        // 이전 날짜로 이동
+                        currentDate.setDate(currentDate.getDate() - 1);
+                    }
+
+                    // 표에 표시할 데이터 준비
+                    const tableData = [latestEntry, ...filteredForTable];
+
+                    // 테이블에 표시
+                    const tableBody = document.querySelector('#dataTable tbody');
+                    tableBody.innerHTML = '';  // 기존 데이터를 지움
+                    tableData.forEach(entry => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${entry.조회_시간}</td>
+                            <td>${entry.우현상품권}</td>
+                            <td>${entry.우천상품권}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
                 })
-                .catch(error => console.error('Error fetching data:', error));
+                .catch(error => console.error('데이터를 불러오는 중 오류 발생:', error));
         }
 
         // 1시간마다 데이터를 새로 불러와서 업데이트
