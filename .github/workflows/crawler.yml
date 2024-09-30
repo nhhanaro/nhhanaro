@@ -2,33 +2,26 @@ name: Run Crawler
 
 on:
   schedule:
-    - cron: '5 9,15,21 * * *'  # 매일 09:05, 15:05, 21:05에 실행
-  workflow_dispatch:  # 수동으로 실행할 수 있는 옵션
+    - cron: '5 9,15,21 * * *'
+  workflow_dispatch:
 
 jobs:
-  run_crawler:
+  run-crawler:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3  # 최신 버전으로 업데이트
-      
-      - name: Set up Python
-        uses: actions/setup-python@v4  # 최신 버전으로 업데이트
-        with:
-          python-version: '3.x'  # 원하는 파이썬 버전 설정
-      
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-      
-      - name: Run the crawler
-        run: |
-          python crawler.py
-      
-      - name: Commit and push changes
-        run: |
-          git config --local user.email "hiyo@gmail.com"
-          git config --local user.name "hiyo"
-          git add data.json  # 변경된 파일 추가
-          git commit -m "Update crawled data" || echo "No changes to commit"
-          git push
+    - name: Checkout repository
+      uses: actions/checkout@v3  # 업데이트된 버전
+
+    - name: Set up Python
+      uses: actions/setup-python@v4  # 업데이트된 버전
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests beautifulsoup4 chardet
+
+    - name: Run crawler
+      run: python crawler.py
