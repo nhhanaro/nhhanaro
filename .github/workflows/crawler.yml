@@ -2,51 +2,60 @@ name: Run Crawler
 
 on:
   schedule:
-    - cron: '5 9,15,21 * * *'  # 매일 09:05, 15:05, 21:05에 실행
-  workflow_dispatch:  # 수동 실행 가능
+    - cron: "5 9,15,21 * * *" # 매일 09:05, 15:05, 21:05에 실행
+  workflow_dispatch: # 수동 실행 가능
 
 jobs:
   run-crawler:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3  # 최신 버전으로 업데이트
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4  # 최신 버전으로 업데이트
-      with:
-        python-version: '3.x'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install requests beautifulsoup4 chardet
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip xvfb libxi6 libgconf-2-4
+          # Chrome 설치
+          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
 
-    - name: Run crawler
-      env:  # 환경 변수 설정
-        PAT: ${{ secrets.PAT }}  # Personal Access Token을 환경 변수로 설정
-      run: |
-        git config --global user.name "Your Name"  # Git 사용자 이름 설정
-        git config --global user.email "you@example.com"  # Git 사용자 이메일 설정
-        python crawler.py  # 크롤러 실행
+          # Python 패키지 설치
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 chardet selenium undetected-chromedriver
 
-    - name: Commit and push changes
-      env:  # 환경 변수 설정
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub 토큰
-      run: |
-        git add data.json crawled_data.db  # 변경된 파일 추가
-        git commit -m "Update data.json and crawled_data.db with crawled data" || echo "No changes to commit"
-        git push https://x-access-token:${{ secrets.PAT }}@github.com/nhhanaro/nhhanaro.git HEAD:master  # 변경사항 푸시
+      - name: Run crawler
+        env:
+          PAT: ${{ secrets.PAT }} # Personal Access Token을 환경 변수로 설정
+        run: |
+          git config --global user.name "hiyo"  # Git 사용자 이름 설정
+          git config --global user.email "hiyo@gmail.com"  # Git 사용자 이메일 설정
+          python crawler.py  # 크롤러 실행
 
-    - name: Upload data.json
-      uses: actions/upload-artifact@v3
-      with:
-        name: data-json
-        path: data.json
+      - name: Commit and push changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub 토큰
+        run: |
+          git add data.json crawled_data.db  # 변경된 파일 추가
+          git commit -m "Update data.json and crawled_data.db with crawled data" || echo "No changes to commit"
+          git push https://x-access-token:${{ secrets.PAT }}@github.com/nhhanaro/nhhanaro.git HEAD:master  # 변경사항 푸시
 
-    - name: Upload crawled_data.db
-      uses: actions/upload-artifact@v3
-      with:
-        name: crawled-data-db
-        path: crawled_data.db
+      - name: Upload data.json
+        uses: actions/upload-artifact@v3
+        with:
+          name: data-json
+          path: data.json
+
+      - name: Upload crawled_data.db
+        uses: actions/upload-artifact@v3
+        with:
+          name: crawled-data-db
+          path: crawled_data.db
