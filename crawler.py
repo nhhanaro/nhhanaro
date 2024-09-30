@@ -60,42 +60,52 @@ def crawl_wooticket():
     options.add_argument("--disable-notifications")
     options.add_argument("--incognito")
 
-    try:
-        driver = SafeChrome(options=options)
-        # 페이지 열기
-        driver.get(url)
+    max_retries = 3  # 최대 시도 횟수
+    retry_delay = 15  # 재시도 간격 (초)
 
-        # 페이지 로딩 대기
-        time.sleep(2)
-
-        # 모든 td 태그 찾기
-        tds = driver.find_elements(By.TAG_NAME, 'td')
-
-        # '농협하나로상품권(10만원권)' 텍스트를 포함한 td 찾기
-        for i, td in enumerate(tds):
-            try:
-                div = td.find_element(By.TAG_NAME, 'div')
-                if div and '농협하나로상품권(10만원권)' in div.text:
-                    # 바로 다음 td에서 매입가 추출
-                    next_td = tds[i + 1]
-                    price_div = next_td.find_element(By.TAG_NAME, 'div')
-                    if price_div:
-                        # 공백과 줄바꿈을 모두 제거하고 연속된 공백을 하나로 축소
-                        price = re.sub(r'\s+', ' ', price_div.text).strip()
-                        price = price.split(' ')[0]  # 첫 번째 부분만 취득 (가격만)
-                        return price  # 가격 반환
-            except Exception as e:
-                logging.error(f"td 요소 처리 중 오류 발생: {e}")
-                continue
-    except Exception as e:
-        logging.error(f"crawl_wooticket에서 오류 발생: {e}")
-    finally:
-        # 오류 여부와 상관없이 드라이버 종료
+    for attempt in range(1, max_retries + 1):
         try:
-            driver.quit()
-        except Exception as e:
-            logging.error(f"드라이버 종료 중 오류 발생: {e}")
+            driver = SafeChrome(options=options)
+            # 페이지 열기
+            driver.get(url)
 
+            # 페이지 로딩 대기
+            time.sleep(2)
+
+            # 모든 td 태그 찾기
+            tds = driver.find_elements(By.TAG_NAME, 'td')
+
+            # '농협하나로상품권(10만원권)' 텍스트를 포함한 td 찾기
+            for i, td in enumerate(tds):
+                try:
+                    div = td.find_element(By.TAG_NAME, 'div')
+                    if div and '농협하나로상품권(10만원권)' in div.text:
+                        # 바로 다음 td에서 매입가 추출
+                        next_td = tds[i + 1]
+                        price_div = next_td.find_element(By.TAG_NAME, 'div')
+                        if price_div:
+                            # 공백과 줄바꿈을 모두 제거하고 연속된 공백을 하나로 축소
+                            price = re.sub(r'\s+', ' ', price_div.text).strip()
+                            price = price.split(' ')[0]  # 첫 번째 부분만 취득 (가격만)
+                            driver.quit()  # 드라이버 종료
+                            return price  # 가격 반환
+                except Exception as e:
+                    logging.error(f"td 요소 처리 중 오류 발생: {e}")
+                    continue
+        except Exception as e:
+            logging.error(f"crawl_wooticket에서 오류 발생 (시도 {attempt}/{max_retries}): {e}")
+        finally:
+            # 오류 여부와 상관없이 드라이버 종료
+            try:
+                driver.quit()
+            except Exception as e:
+                logging.error(f"드라이버 종료 중 오류 발생: {e}")
+
+        if attempt < max_retries:
+            logging.info(f"재시도하기 전에 {retry_delay}초 대기합니다...")
+            time.sleep(retry_delay)  # 재시도 전에 대기
+
+    logging.error(f"wooticket_result를 가져오지 못했습니다. 최대 {max_retries}회 시도 후 실패.")
     return None  # 정보 없음
 
 # 우현상품권 (wooh.co.kr) 크롤링 (기존 방식 유지)
