@@ -25,3 +25,11 @@ jobs:
 
     - name: Run crawler
       run: python crawler.py
+
+    - name: Commit and push JSON file
+      run: |
+        git config --local user.name "hiyo"
+        git config --local user.email "hiyo@gmail.com"
+        git add data.json
+        git commit -m "Update data.json with crawled data"
+        git push
