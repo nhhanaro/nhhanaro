@@ -49,7 +49,9 @@ def crawl_wooticket():
                 price = re.sub(r'\s+', ' ', price_div.get_text()).strip()
                 # (7%) 제거
                 price = price.split(' ')[0]  # 첫 번째 부분만 취득 (가격만)
+                print(f"우천상품권 가격: {price}")  # Debugging output
                 return price  # 가격 반환
+    print("우천상품권 정보를 찾을 수 없습니다.")  # Debugging output
     return None  # 정보 없음
 
 # 우현상품권 (wooh.co.kr) 크롤링
@@ -75,7 +77,9 @@ def crawl_wooh():
         grey_font = blue_font.find_next('font', color='#494949')
         if grey_font:
             grey_text = grey_font.get_text().strip()
+            print(f"우현상품권 가격: {blue_text}")  # Debugging output
             return blue_text  # 가격 반환
+    print("우현상품권 정보를 찾을 수 없습니다.")  # Debugging output
     return None  # 정보 없음
 
 # 데이터베이스 생성
@@ -98,6 +102,9 @@ if wooticket_result and wooh_result:
                    (now, wooh_result, wooticket_result))
     conn.commit()
     conn.close()
+    print("데이터베이스에 결과 저장 완료.")  # Debugging output
+else:
+    print("데이터베이스에 저장할 데이터가 없습니다.")  # Debugging output
 
 # DB 데이터를 JSON으로 변환
 def save_data_to_json():
@@ -121,6 +128,7 @@ def save_data_to_json():
         json.dump(data, json_file, ensure_ascii=False, indent=4)
 
     conn.close()
+    print(f"data.json 파일 저장 완료. 데이터 개수: {len(data)}")  # Debugging output
 
 # 데이터 JSON으로 저장
 save_data_to_json()
