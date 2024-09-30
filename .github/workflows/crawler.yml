@@ -22,6 +22,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y wget unzip xvfb libxi6 libgconf-2-4
+          sudo apt-get install -y python3-distutils  # distutils 설치
           # Chrome 설치
           wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
           sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
@@ -36,8 +37,8 @@ jobs:
         env:
           PAT: ${{ secrets.PAT }} # Personal Access Token을 환경 변수로 설정
         run: |
-          git config --global user.name "hiyo"  # Git 사용자 이름 설정
-          git config --global user.email "hiyo@gmail.com"  # Git 사용자 이메일 설정
+          git config --global user.name "Your Name"  # Git 사용자 이름 설정
+          git config --global user.email "you@example.com"  # Git 사용자 이메일 설정
           python crawler.py  # 크롤러 실행
 
       - name: Commit and push changes
