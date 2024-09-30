@@ -7,7 +7,6 @@ import pytz
 import sqlite3
 import json
 import time
-from selenium.webdriver.chrome.service import Service  # 추가
 from selenium.webdriver.common.by import By
 import undetected_chromedriver as uc
 
@@ -26,35 +25,25 @@ def create_db():
     conn.commit()
     conn.close()
 
-# 안전하게 종료할 수 있는 Chrome 클래스 정의
-class SafeChrome(uc.Chrome):
-    def __del__(self):
-        try:
-            self.quit()
-        except Exception:
-            pass  # 예외 무시
-
 # 우천상품권 (wooticket) 크롤링 using Selenium과 undetected-chromedriver
 def crawl_wooticket():
     url = "http://www.wooticket.com/price_status.php"
 
     # undetected-chromedriver 옵션 설정
     options = uc.ChromeOptions()
-    options.add_argument('--headless')  # 필요에 따라 헤드리스 모드 사용
+    options.headless = True  # 필요에 따라 헤드리스 모드 사용
     options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-gpu')
     options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)')
+    options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)')
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--disable-extensions")
     options.add_argument("--disable-notifications")
     options.add_argument("--incognito")
 
-    # Service 객체로 ChromeDriver 경로 설정
-    service = Service()  # ChromeDriver 경로를 자동으로 탐색
-
-    driver = uc.Chrome(service=service, options=options)
+    # Chrome 드라이버 생성
+    driver = uc.Chrome(options=options)
 
     try:
         # 페이지 열기
@@ -79,7 +68,7 @@ def crawl_wooticket():
                         price = re.sub(r'\s+', ' ', price_div.text).strip()
                         price = price.split(' ')[0]  # 첫 번째 부분만 취득 (가격만)
                         return price  # 가격 반환
-            except Exception as e:
+            except Exception:
                 continue
     finally:
         # 오류 여부와 상관없이 드라이버 종료
@@ -87,7 +76,7 @@ def crawl_wooticket():
 
     return None  # 정보 없음
 
-# 우현상품권 (wooh.co.kr) 크롤링 (기존 방식 유지)
+# 우현상품권 (wooh.co.kr) 크롤링
 def crawl_wooh():
     time.sleep(2)  # 요청 사이에 2초 대기
     url = "https://www.wooh.co.kr/shop/item.php?it_id=1595825248"
