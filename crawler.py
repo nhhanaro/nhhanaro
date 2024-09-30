@@ -21,6 +21,13 @@ def create_db():
     conn.commit()
     conn.close()
 
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+}
+
+response = requests.get(url, headers=headers)
+
+
 # 우천상품권 (wooticket) 크롤링
 def crawl_wooticket():
     url = "http://www.wooticket.com/price_status.php"
