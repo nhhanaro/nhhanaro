@@ -2,7 +2,7 @@ name: Run Crawler
 
 on:
   schedule:
-    - cron: "5 9,15,21 * * *" # 매일 09:05, 15:05, 21:05에 실행
+    - cron: "0 0,6,12,18 * * *" # 매일 09:00, 15:00, 21:00에 실행
   workflow_dispatch: # 수동 실행 가능
 
 jobs:

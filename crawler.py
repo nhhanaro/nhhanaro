@@ -106,6 +106,12 @@ def crawl_wooh():
         return blue_text  # 가격 반환
     return None  # 정보 없음
 
+# 한국 시간 (UTC + 9)으로 현재 시간 반환
+def get_kst_time():
+    utc_now = datetime.datetime.utcnow()  # UTC 기준 현재 시간
+    kst_now = utc_now + datetime.timedelta(hours=9)  # 한국 시간 = UTC + 9
+    return kst_now.strftime("%Y-%m-%d %H:%M")
+
 # 데이터베이스에 크롤링 결과 저장
 def save_to_db(now, wooh_price, wooticket_price):
     conn = sqlite3.connect('crawled_data.db')
@@ -143,8 +149,8 @@ create_db()
 wooticket_result = crawl_wooticket()
 wooh_result = crawl_wooh()
 
-# 현재 날짜 및 시간 추가
-now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+# 한국 시간으로 현재 날짜 및 시간 추가
+now = get_kst_time()
 
 # 데이터베이스에 결과 저장
 if wooticket_result and wooh_result:
