@@ -42,8 +42,8 @@ def crawl_wooticket():
     options.add_argument("--disable-notifications")
     options.add_argument("--incognito")
 
-    # Chrome 드라이버 생성
-    driver = uc.Chrome(options=options)
+    # Chrome 드라이버 생성 (version_main 매개변수 추가)
+    driver = uc.Chrome(options=options, version_main=129)
 
     try:
         # 페이지 열기
