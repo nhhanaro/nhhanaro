@@ -2,7 +2,7 @@ name: Run Crawler
 
 on:
   schedule:
-    - cron: "5 0,6,12,18 * * *" # 매일 09:05, 15:05, 21:05에 실행 (UTC 기준으로 조정)
+    - cron: "5 9,15,21 * * *" # 매일 09:05, 15:05, 21:05에 실행
   workflow_dispatch: # 수동 실행 가능
 
 jobs:
@@ -16,19 +16,21 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.9" # Python 버전을 3.9로 설정
+          python-version: "3.11" # Python 버전을 3.11로 설정
 
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y wget unzip xvfb libxi6 libgconf-2-4
-          # 최신 안정 버전의 Chrome 설치
-          wget -O /tmp/google-chrome-stable_current_amd64.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo apt install -y /tmp/google-chrome-stable_current_amd64.deb
+          # Chrome 설치
+          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
 
           # Python 패키지 설치
           python -m pip install --upgrade pip
-          pip install -r requirements.txt  # requirements.txt에 있는 모든 패키지 설치
+          pip install requests beautifulsoup4 chardet selenium undetected-chromedriver
 
       - name: Run crawler
         env:
