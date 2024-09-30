@@ -56,7 +56,7 @@ def crawl_wooticket():
         driver.get(url)
 
         # 페이지 로딩 대기
-        time.sleep(10)
+        time.sleep(2)
 
         # 모든 td 태그 찾기
         tds = driver.find_elements(By.TAG_NAME, 'td')
@@ -106,12 +106,6 @@ def crawl_wooh():
         return blue_text  # 가격 반환
     return None  # 정보 없음
 
-# 한국 시간 (UTC + 9)으로 현재 시간 반환
-def get_kst_time():
-    utc_now = datetime.datetime.utcnow()  # 현재 UTC 시간 가져오기
-    kst_now = utc_now + datetime.timedelta(hours=9)  # UTC + 9 = KST
-    return kst_now.strftime("%Y-%m-%d %H:%M")
-
 # 데이터베이스에 크롤링 결과 저장
 def save_to_db(now, wooh_price, wooticket_price):
     conn = sqlite3.connect('crawled_data.db')
@@ -149,8 +143,8 @@ create_db()
 wooticket_result = crawl_wooticket()
 wooh_result = crawl_wooh()
 
-# 한국 시간으로 현재 날짜 및 시간 추가
-now = get_kst_time()
+# 현재 날짜 및 시간 추가
+now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
 # 데이터베이스에 결과 저장
 if wooticket_result and wooh_result:
