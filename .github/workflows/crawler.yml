@@ -1,12 +1,12 @@
-name: Run Crawler
+name: Crawl and Deploy to GitHub Pages
 
 on:
   schedule:
-    - cron: "0 0,3,6,9,12,15,18,21 * * *" # 매 3시간마다 정각에 실행 (한국 시간 기준)
-  workflow_dispatch: # 수동 실행 가능
+    - cron: "0 */3 * * *" # 매 3시간마다 실행
+  workflow_dispatch: # 수동 실행 허용
 
 jobs:
-  run-crawler:
+  crawl_and_deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,48 +16,44 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11" # Python 버전을 3.11로 설정
+          python-version: "3.8"
 
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y wget unzip xvfb libxi6 libgconf-2-4
-          # Chrome 설치
-          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-          sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
-          sudo apt-get update
-          sudo apt-get install -y google-chrome-stable
-
-          # Python 패키지 설치
           python -m pip install --upgrade pip
-          pip install requests beautifulsoup4 chardet selenium undetected-chromedriver
+          pip install -r requirements.txt
+
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: "latest"
+
+      - name: Set up ChromeDriver
+        uses: nanasess/setup-chromedriver@v1
+        with:
+          chromedriver-version: "latest"
 
       - name: Run crawler
         env:
-          PAT: ${{ secrets.PAT }} # Personal Access Token을 환경 변수로 설정
+          CHROMEDRIVER: ${{ steps.chromedriver.outputs.chromedriver-path }}
         run: |
-          git config --global user.name "Your Name"  # Git 사용자 이름 설정
-          git config --global user.email "you@example.com"  # Git 사용자 이메일 설정
-          # undetected-chromedriver 캐시 삭제
-          rm -rf ~/.local/share/undetected_chromedriver/
-          python crawler.py  # 크롤러 실행
+          python crawler.py  # 실제 스크립트 이름으로 변경하세요
 
       - name: Commit and push changes
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub 토큰
         run: |
-          git add data.json crawled_data.db  # 변경된 파일 추가
-          git commit -m "Update data.json and crawled_data.db with crawled data" || echo "No changes to commit"
-          git push https://x-access-token:${{ secrets.PAT }}@github.com/nhhanaro/nhhanaro.git HEAD:master  # 변경사항 푸시
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add data.json crawled_data.db
+          git commit -m "Update data.json and database with latest crawling data"
+          git push
+        env:
+          GIT_AUTHOR_NAME: GitHub Actions
+          GIT_AUTHOR_EMAIL: actions@github.com
+          GIT_COMMITTER_NAME: GitHub Actions
+          GIT_COMMITTER_EMAIL: actions@github.com
 
-      - name: Upload data.json
-        uses: actions/upload-artifact@v3
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          name: data-json
-          path: data.json
-
-      - name: Upload crawled_data.db
-        uses: actions/upload-artifact@v3
-        with:
-          name: crawled-data-db
-          path: crawled_data.db
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./ # 배포할 디렉토리 (필요에 따라 수정)

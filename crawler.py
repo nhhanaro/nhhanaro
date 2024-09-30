@@ -6,21 +6,18 @@ import datetime
 import sqlite3
 import json
 import time
+from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import undetected_chromedriver as uc
 import os
 import shutil
 import logging
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
-
-# undetected-chromedriver 캐시 삭제
-uc_cache_dir = os.path.expanduser('~/.local/share/undetected_chromedriver')
-if os.path.exists(uc_cache_dir):
-    shutil.rmtree(uc_cache_dir)
 
 # SQLite 데이터베이스 연결 및 테이블 생성
 def create_db():
@@ -37,37 +34,31 @@ def create_db():
     conn.commit()
     conn.close()
 
-# 안전하게 종료할 수 있는 Chrome 클래스 정의
-class SafeChrome(uc.Chrome):
-    def __del__(self):
-        try:
-            self.quit()
-        except Exception:
-            pass  # 예외 무시
-
-# 우천상품권 (wooticket) 크롤링 using Selenium과 undetected-chromedriver
+# 우천상품권 (wooticket) 크롤링 using Selenium WebDriver
 def crawl_wooticket():
     url = "http://www.wooticket.com/price_status.php"
 
-    # undetected-chromedriver 옵션 설정
-    options = uc.ChromeOptions()
+    # Selenium WebDriver 옵션 설정
+    options = Options()
     options.add_argument('--headless')  # 필요에 따라 헤드리스 모드 사용
-    options.add_argument('--disable-blink-features=AutomationControlled')
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-gpu')
     options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)')
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--disable-extensions")
     options.add_argument("--disable-notifications")
     options.add_argument("--incognito")
+    options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)')
+
+    # ChromeDriver 서비스 설정
+    service = Service()  # ChromeDriver 경로를 지정해야 할 수 있습니다.
 
     max_retries = 5  # 최대 시도 횟수
     retry_delay = 15  # 재시도 간격 (초)
 
     for attempt in range(1, max_retries + 1):
         try:
-            driver = SafeChrome(options=options)
+            driver = webdriver.Chrome(service=service, options=options)
             # 페이지 열기
             driver.get(url)
 
