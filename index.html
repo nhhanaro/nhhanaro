@@ -62,14 +62,14 @@
 
             canvas {
                 width: 100% !important;
-                height: 200px !important;
+                height: 300px !important; /* 모바일에서 차트 높이 변경 */
             }
         }
 
         @media (min-width: 601px) {
             canvas {
                 width: 100% !important;
-                height: 500px !important; /* 차트 크기를 더 키움 */
+                height: 500px !important; /* 차트 크기 더 키움 */
             }
         }
     </style>
@@ -103,8 +103,9 @@
         let currentPage = 0;
         const itemsPerPage = 7; // 페이지당 표시할 항목 수
 
+        // 데이터를 로드하고 표와 차트를 업데이트하는 함수
         function loadData() {
-            fetch('data.json', { cache: 'no-store' })
+            fetch('data.json', { cache: 'no-store' }) // 캐시 방지 헤더 추가
                 .then(response => response.json())
                 .then(data => {
                     if (!data || data.length === 0) {
@@ -112,10 +113,10 @@
                         return;
                     }
 
-                    // 조회 시간 기준으로 최신순으로 정렬
+                    // 최신 데이터가 위로 오도록 조회 시간 기준으로 최신순으로 정렬
                     data.sort((a, b) => new Date(b.조회_시간) - new Date(a.조회_시간));
 
-                    // 그래프용 데이터 준비 (왼쪽 -> 오른쪽으로 흐르도록 변경)
+                    // 그래프용 데이터 준비 (왼쪽 -> 오른쪽으로 흐르도록 reverse 사용)
                     const labels = data.map(entry => entry.조회_시간.split(' ')[0]).reverse();
                     const woohPrices = data.map(entry => parseInt(entry.우현상품권.replace(/,/g, ''))).reverse();
                     const wooticketPrices = data.map(entry => parseInt(entry.우천상품권.replace(/,/g, ''))).reverse();
@@ -174,42 +175,6 @@
                 .catch(error => console.error('데이터를 불러오는 중 오류 발생:', error));
         }
 
-        // 전일 데이터 필터링 로직
-        function getPreviousDayData(data, currentDate) {
-            let filteredData = [];
-            let limit = 0; // 무한 루프 방지
-
-            // 전일 데이터(15:00-15:59) 필터링
-            while (filteredData.length === 0 && limit < 20) {
-                const dateString = currentDate.toISOString().split('T')[0];
-
-                // 15:00~15:59 사이 데이터를 먼저 찾음
-                let dayData = data.filter(entry => {
-                    const [datePart, timePart] = entry.조회_시간.split(' ');
-                    return datePart === dateString && timePart >= '15:00' && timePart <= '15:59';
-                });
-
-                // 15:00~15:59 데이터가 없으면 가장 최신 데이터 가져옴
-                if (dayData.length === 0) {
-                    dayData = data.filter(entry => entry.조회_시간.split(' ')[0] === dateString);
-                    if (dayData.length > 0) {
-                        dayData = [dayData[dayData.length - 1]]; // 해당 날짜의 가장 최신 데이터
-                    }
-                }
-
-                // 데이터를 찾았으면 추가
-                if (dayData.length > 0) {
-                    filteredData.push(dayData[0]);
-                }
-
-                // 다음 전일자로 이동
-                currentDate.setDate(currentDate.getDate() - 1);
-                limit++;
-            }
-
-            return filteredData;
-        }
-
         // 표 데이터를 페이지별로 나누어 표시
         function paginateTable(data) {
             const tableBody = document.querySelector('#dataTable tbody');
@@ -219,16 +184,7 @@
             const end = start + itemsPerPage;
             const pageData = data.slice(start, end);
 
-            // 최근 일자의 데이터는 맨 위, 그다음 전일 15:00 - 15:59 데이터를 표시
-            const todayData = [pageData[0]]; // 첫 번째 행에 최근 데이터
-            let currentDate = new Date(todayData[0].조회_시간.split(' ')[0]);
-            currentDate.setDate(currentDate.getDate() - 1); // 전일자로 설정
-
-            const previousDayData = getPreviousDayData(data, currentDate); // 전일자 데이터 찾기
-
-            const displayData = [...todayData, ...previousDayData]; // 오늘 데이터 + 전일 데이터로 구성
-
-            displayData.forEach(entry => {
+            pageData.forEach(entry => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${entry.조회_시간}</td>
