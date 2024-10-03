@@ -34,7 +34,6 @@
             height: 35px;
         }
 
-        /* 버튼 스타일 */
         #pagination {
             text-align: center;
             margin-bottom: 20px;
@@ -54,7 +53,6 @@
             cursor: not-allowed;
         }
 
-        /* 반응형 디자인 */
         @media (max-width: 600px) {
             th, td {
                 padding: 6px;
@@ -62,14 +60,14 @@
 
             canvas {
                 width: 100% !important;
-                height: 300px !important; /* 모바일에서 차트 높이 변경 */
+                height: 300px !important;
             }
         }
 
         @media (min-width: 601px) {
             canvas {
                 width: 100% !important;
-                height: 500px !important; /* 차트 크기 더 키움 */
+                height: 500px !important;
             }
         }
     </style>
@@ -77,7 +75,6 @@
 <body>
     <h1>NH GIFT CARD(10만원)</h1>
 
-    <!-- JSON 데이터를 표로 보여줄 부분 -->
     <table id="dataTable">
         <thead>
             <tr>
@@ -89,24 +86,21 @@
         <tbody></tbody>
     </table>
 
-    <!-- 페이지네이션 버튼 -->
     <div id="pagination">
         <button id="prevBtn" disabled>이전</button>
         <button id="nextBtn" disabled>다음</button>
     </div>
 
-    <!-- 그래프를 그릴 부분 -->
     <canvas id="priceChart"></canvas>
 
     <script>
         let priceChart = null;
         let currentPage = 0;
-        const itemsPerPage = 7; // 페이지당 표시할 항목 수
-        let filteredData = []; // 필터링된 데이터 저장소
+        const itemsPerPage = 7;
+        let filteredData = [];
 
-        // 데이터를 로드하고 표와 차트를 업데이트하는 함수
         function loadData() {
-            fetch('data.json', { cache: 'no-store' }) // 캐시 방지 헤더 추가
+            fetch('data.json', { cache: 'no-store' })
                 .then(response => response.json())
                 .then(data => {
                     if (!data || data.length === 0) {
@@ -114,18 +108,13 @@
                         return;
                     }
 
-                    // 조회 시간 기준으로 최신순으로 정렬
                     data.sort((a, b) => new Date(b.조회_시간) - new Date(a.조회_시간));
-
-                    // 가장 최근 날짜의 최신 데이터만 포함하고, 그 이전 날짜는 15:00~15:59 사이의 데이터만 포함하는 함수
                     filteredData = filterDataByDate(data);
 
-                    // 그래프용 데이터 준비 (왼쪽 -> 오른쪽으로 흐르도록 reverse 사용)
                     const labels = filteredData.map(entry => entry.조회_시간.split(' ')[0]).reverse();
                     const woohPrices = filteredData.map(entry => parseInt(entry.우현상품권.replace(/,/g, ''))).reverse();
                     const wooticketPrices = filteredData.map(entry => parseInt(entry.우천상품권.replace(/,/g, ''))).reverse();
 
-                    // 차트가 이미 있으면 데이터 업데이트, 없으면 새로 생성
                     const ctx = document.getElementById('priceChart').getContext('2d');
                     if (priceChart === null) {
                         priceChart = new Chart(ctx, {
@@ -149,7 +138,7 @@
                             },
                             options: {
                                 responsive: true,
-                                aspectRatio: 2, // 반응형 차트 비율 설정
+                                aspectRatio: 2,
                                 scales: {
                                     x: {
                                         title: {
@@ -173,48 +162,40 @@
                         priceChart.update();
                     }
 
-                    // 첫 페이지 데이터 출력
                     paginateTable();
                 })
                 .catch(error => console.error('데이터를 불러오는 중 오류 발생:', error));
         }
 
-        // 가장 최근 날짜의 가장 최신 데이터만 표시하고, 그 이전 날짜는 15:00~15:59 데이터를 표시하는 함수
         function filterDataByDate(data) {
             const filtered = [];
-            const recentDate = data[0].조회_시간.split(' ')[0]; // 가장 최근 날짜
+            const recentDate = data[0].조회_시간.split(' ')[0];
 
-            // 1. 가장 최근 날짜의 가장 최신 데이터만 추가
             filtered.push(data[0]);
 
-            // 2. 그 이전 날짜의 15:00~15:59 데이터만 추가
             let currentDate = new Date(recentDate);
-            currentDate.setDate(currentDate.getDate() - 1); // 전일로 이동
+            currentDate.setDate(currentDate.getDate() - 1);
 
-            let limit = 0; // 무한 루프 방지
+            let limit = 0;
             while (filtered.length < data.length && limit < 20) {
                 const dateString = currentDate.toISOString().split('T')[0];
 
-                // 15:00~15:59 사이 데이터를 찾음
                 let dayData = data.filter(entry => {
                     const [datePart, timePart] = entry.조회_시간.split(' ');
                     return datePart === dateString && timePart >= '15:00' && timePart <= '15:59';
                 });
 
-                // 15:00~15:59 데이터가 없으면 가장 최신 데이터 가져옴
                 if (dayData.length === 0) {
                     dayData = data.filter(entry => entry.조회_시간.split(' ')[0] === dateString);
                     if (dayData.length > 0) {
-                        dayData = [dayData[dayData.length - 1]]; // 해당 날짜의 가장 최신 데이터
+                        dayData = [dayData[dayData.length - 1]];
                     }
                 }
 
-                // 데이터를 찾았으면 추가
                 if (dayData.length > 0) {
                     filtered.push(dayData[0]);
                 }
 
-                // 다음 전일자로 이동
                 currentDate.setDate(currentDate.getDate() - 1);
                 limit++;
             }
@@ -222,31 +203,39 @@
             return filtered;
         }
 
-        // 표 데이터를 페이지별로 나누어 표시
         function paginateTable() {
             const tableBody = document.querySelector('#dataTable tbody');
-            tableBody.innerHTML = ''; // 기존 데이터를 지움
+            tableBody.innerHTML = '';
 
             const start = currentPage * itemsPerPage;
             const end = Math.min(start + itemsPerPage, filteredData.length);
             const pageData = filteredData.slice(start, end);
 
             pageData.forEach(entry => {
+                const woohValue = parseInt(entry.우현상품권.replace(/,/g, ''));
+                const woohDiscount = calculateDiscount(woohValue);
+                const wooticketValue = parseInt(entry.우천상품권.replace(/,/g, ''));
+                const wooticketDiscount = calculateDiscount(wooticketValue);
+
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${entry.조회_시간}</td>
-                    <td>${entry.우현상품권}</td>
-                    <td>${entry.우천상품권}</td>
+                    <td>${entry.우현상품권} (${woohDiscount}%)</td>
+                    <td>${entry.우천상품권} (${wooticketDiscount}%)</td>
                 `;
                 tableBody.appendChild(row);
             });
 
-            // 페이지 버튼 상태 업데이트
             document.getElementById('prevBtn').disabled = currentPage === 0;
             document.getElementById('nextBtn').disabled = end >= filteredData.length;
         }
 
-        // 이전 페이지 버튼 클릭
+        function calculateDiscount(value) {
+            const originalPrice = 100000;
+            const discount = ((originalPrice - value) / originalPrice) * 100;
+            return discount.toFixed(2); // 소수점 2자리까지 표시
+        }
+
         document.getElementById('prevBtn').addEventListener('click', function() {
             if (currentPage > 0) {
                 currentPage--;
@@ -254,15 +243,13 @@
             }
         });
 
-        // 다음 페이지 버튼 클릭
         document.getElementById('nextBtn').addEventListener('click', function() {
             currentPage++;
             paginateTable();
         });
 
-        // 1시간마다 데이터를 새로 불러와서 업데이트
-        setInterval(loadData, 3600000);  // 1시간마다 새로고침
-        loadData();  // 페이지 로드 시 즉시 데이터를 로드
+        setInterval(loadData, 3600000);
+        loadData();
     </script>
 </body>
 </html>
