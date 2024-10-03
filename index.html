@@ -80,11 +80,15 @@
                         return;
                     }
 
-                    // 그래프는 모든 데이터를 그대로 사용하여 그리기
-                    const labels = data.map(entry => entry.조회_시간); // 모든 시간 데이터를 사용
+                    // id를 기준으로 최신순으로 정렬
+                    data.sort((a, b) => b.id - a.id); // 최신 데이터가 맨 위로 오게 정렬
+
+                    // 그래프용 데이터 준비
+                    const labels = data.map(entry => entry.조회_시간.split(' ')[0]); // 날짜 기준 라벨
                     const woohPrices = data.map(entry => parseInt(entry.우현상품권.replace(/,/g, '')));
                     const wooticketPrices = data.map(entry => parseInt(entry.우천상품권.replace(/,/g, '')));
 
+                    // 차트 그리기
                     const ctx = document.getElementById('priceChart').getContext('2d');
                     if (window.priceChart) {
                         window.priceChart.destroy();  // 기존 차트를 지움
@@ -115,7 +119,7 @@
                                 x: {
                                     title: {
                                         display: true,
-                                        text: '조회 시간'
+                                        text: '날짜'
                                     }
                                 },
                                 y: {
@@ -128,42 +132,34 @@
                         }
                     });
 
-                    // 가장 최근 일자의 가장 최신 데이터 가져오기
-                    const latestEntry = data[data.length - 1];
-                    const latestDate = latestEntry.조회_시간.split(' ')[0];
+                    // 최신 데이터 및 전일 15:00~15:59 사이의 데이터 필터링
+                    const latestEntry = data[0]; // 최신 데이터는 id가 가장 큰 데이터
+                    const filteredForTable = [latestEntry]; // 최신 데이터를 첫번째로 추가
+                    const todayDate = latestEntry.조회_시간.split(' ')[0]; // 최신 데이터의 날짜
 
-                    // 최근 일자의 전일로부터 10일까지의 15:00 ~ 15:59 사이의 데이터 가져오기
-                    const filteredForTable = [];
-                    let daysCount = 0;
-                    let currentDate = new Date(latestDate);
+                    // 전일 데이터를 15:00~15:59에 해당하는 항목만 필터링
+                    let currentDate = new Date(todayDate);
                     currentDate.setDate(currentDate.getDate() - 1); // 전일로 설정
 
-                    while (daysCount < 10) {
+                    while (filteredForTable.length < 11) { // 최대 10일 전까지 데이터 가져옴
                         const dateString = currentDate.toISOString().split('T')[0];
 
-                        // 해당 날짜의 15:00 ~ 15:59 사이의 데이터 필터링
                         const dayData = data.filter(entry => {
                             const [datePart, timePart] = entry.조회_시간.split(' ');
                             return datePart === dateString && timePart >= '15:00' && timePart <= '15:59';
                         });
 
                         if (dayData.length > 0) {
-                            // 해당 날짜의 마지막 데이터를 사용
-                            filteredForTable.unshift(dayData[dayData.length - 1]);
-                            daysCount++;
+                            filteredForTable.push(dayData[dayData.length - 1]); // 해당 날짜의 가장 최신 데이터 추가
                         }
 
-                        // 이전 날짜로 이동
-                        currentDate.setDate(currentDate.getDate() - 1);
+                        currentDate.setDate(currentDate.getDate() - 1); // 이전 날짜로 이동
                     }
 
                     // 표에 표시할 데이터 준비
-                    const tableData = [latestEntry, ...filteredForTable];
-
-                    // 테이블에 표시
                     const tableBody = document.querySelector('#dataTable tbody');
                     tableBody.innerHTML = '';  // 기존 데이터를 지움
-                    tableData.forEach(entry => {
+                    filteredForTable.forEach(entry => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td>${entry.조회_시간}</td>
