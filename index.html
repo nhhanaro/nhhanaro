@@ -3,183 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NH GIFT CARD(10만원)</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-
-        table, th, td {
-            border: 1px solid #ddd;
-        }
-
-        th, td {
-            padding: 12px;
-            text-align: center;
-        }
-
-        th {
-            background-color: #f2f2f2;
-        }
-
-        /* 반응형 디자인을 위한 설정 */
-        @media (max-width: 600px) {
-            th, td {
-                padding: 8px;
-            }
-
-            canvas {
-                width: 100% !important;
-                height: auto !important;
-            }
-        }
-
-        /* 큰 화면에서 보기 좋도록 그래프 크기 설정 */
-        @media (min-width: 601px) {
-            canvas {
-                width: 100% !important;
-                height: 400px !important;
-            }
-        }
-    </style>
+    <title>테스트: NH GIFT CARD</title>
 </head>
 <body>
     <h1>NH GIFT CARD(10만원)</h1>
 
-    <!-- JSON 데이터를 표로 보여줄 부분 -->
-    <table id="dataTable">
-        <thead>
-            <tr>
-                <th>조회 시간</th>
-                <th>우현상품권</th>
-                <th>우천상품권</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-
-    <!-- 그래프를 그릴 부분 -->
-    <canvas id="priceChart"></canvas>
-
     <script>
-        // 데이터를 로드하고 표와 차트를 업데이트하는 함수
+        // 데이터를 로드하는 단순 테스트
         function loadData() {
+            console.log("데이터 로드 시도 중...");
+
             fetch('data.json')
                 .then(response => response.json())
                 .then(data => {
-                    if (!data || data.length === 0) {
-                        console.error('데이터가 없습니다.');
-                        return;
-                    }
-
-                    // 데이터가 로드되었는지 확인 (디버깅용)
-                    console.log('데이터 로드 성공:', data);
-
-                    // id 기준으로 최신 데이터가 맨 위로 오도록 정렬
-                    data.sort((a, b) => b.id - a.id);
-
-                    // 그래프용 데이터 준비 (모든 데이터를 사용)
-                    const labels = data.map(entry => entry.조회_시간.split(' ')[0]); // 날짜 기준 라벨
-                    const woohPrices = data.map(entry => parseInt(entry.우현상품권.replace(/,/g, '')));
-                    const wooticketPrices = data.map(entry => parseInt(entry.우천상품권.replace(/,/g, '')));
-
-                    // 차트 그리기
-                    const ctx = document.getElementById('priceChart').getContext('2d');
-                    if (window.priceChart && typeof window.priceChart.destroy === 'function') {
-                        window.priceChart.destroy();  // 기존 차트를 지움
-                    }
-
-                    window.priceChart = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [
-                                {
-                                    label: '우현상품권 가격',
-                                    data: woohPrices,
-                                    borderColor: 'blue',
-                                    fill: false
-                                },
-                                {
-                                    label: '우천상품권 가격',
-                                    data: wooticketPrices,
-                                    borderColor: 'green',
-                                    fill: false
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            scales: {
-                                x: {
-                                    title: {
-                                        display: true,
-                                        text: '날짜'
-                                    }
-                                },
-                                y: {
-                                    title: {
-                                        display: true,
-                                        text: '가격 (원)'
-                                    }
-                                }
-                            }
-                        }
-                    });
-
-                    // 최신 데이터 및 전일 15:00~15:59 사이의 데이터 필터링
-                    const latestEntry = data[0]; // 최신 데이터는 id가 가장 큰 데이터
-                    const filteredForTable = [latestEntry]; // 최신 데이터를 첫 번째로 추가
-
-                    // 전일 데이터를 15:00~15:59에 해당하는 항목만 필터링
-                    let currentDate = new Date(latestEntry.조회_시간.split(' ')[0]);
-                    currentDate.setDate(currentDate.getDate() - 1); // 전일로 설정
-
-                    while (filteredForTable.length < 11) { // 최대 10일 전까지 데이터 필터링
-                        const dateString = currentDate.toISOString().split('T')[0];
-
-                        const dayData = data.filter(entry => {
-                            const [datePart, timePart] = entry.조회_시간.split(' ');
-                            return datePart === dateString && timePart >= '15:00' && timePart <= '15:59';
-                        });
-
-                        if (dayData.length > 0) {
-                            filteredForTable.push(dayData[dayData.length - 1]); // 해당 날짜의 가장 최신 데이터 추가
-                        }
-
-                        currentDate.setDate(currentDate.getDate() - 1); // 이전 날짜로 이동
-                    }
-
-                    // 표에 표시할 데이터 준비
-                    const tableBody = document.querySelector('#dataTable tbody');
-                    tableBody.innerHTML = '';  // 기존 데이터를 지움
-                    filteredForTable.forEach(entry => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${entry.조회_시간}</td>
-                            <td>${entry.우현상품권}</td>
-                            <td>${entry.우천상품권}</td>
-                        `;
-                        tableBody.appendChild(row);
-                    });
-
-                    // 디버깅용: 필터링된 데이터 확인
-                    console.log('표에 표시할 데이터:', filteredForTable);
+                    console.log("데이터 로드 성공:", data);  // 데이터 출력
                 })
                 .catch(error => console.error('데이터를 불러오는 중 오류 발생:', error));
         }
 
-        // 1시간마다 데이터를 새로 불러와서 업데이트
-        setInterval(loadData, 3600000);  // 1시간마다 새로고침
-        loadData();  // 페이지 로드 시 즉시 데이터를 로드
+        // 페이지 로드 시 즉시 데이터를 로드
+        loadData();
     </script>
 </body>
 </html>
