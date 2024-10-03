@@ -1,0 +1,3 @@
+SELECT * FROM price_data WHERE 조회_시간 NOT LIKE '%15:%';
+
+DELETE FROM price_data WHERE 조회_시간 NOT LIKE '%15:%';
