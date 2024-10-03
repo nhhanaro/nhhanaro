@@ -113,13 +113,16 @@
                         return;
                     }
 
-                    // 최신 데이터가 위로 오도록 조회 시간 기준으로 최신순으로 정렬
+                    // 조회 시간 기준으로 최신순으로 정렬
                     data.sort((a, b) => new Date(b.조회_시간) - new Date(a.조회_시간));
 
+                    // 가장 최근 날짜의 최신 데이터만 포함하고, 그 이전 날짜는 15:00~15:59 사이의 데이터만 포함하는 함수
+                    const filteredData = filterDataByDate(data);
+
                     // 그래프용 데이터 준비 (왼쪽 -> 오른쪽으로 흐르도록 reverse 사용)
-                    const labels = data.map(entry => entry.조회_시간.split(' ')[0]).reverse();
-                    const woohPrices = data.map(entry => parseInt(entry.우현상품권.replace(/,/g, ''))).reverse();
-                    const wooticketPrices = data.map(entry => parseInt(entry.우천상품권.replace(/,/g, ''))).reverse();
+                    const labels = filteredData.map(entry => entry.조회_시간.split(' ')[0]).reverse();
+                    const woohPrices = filteredData.map(entry => parseInt(entry.우현상품권.replace(/,/g, ''))).reverse();
+                    const wooticketPrices = filteredData.map(entry => parseInt(entry.우천상품권.replace(/,/g, ''))).reverse();
 
                     // 차트가 이미 있으면 데이터 업데이트, 없으면 새로 생성
                     const ctx = document.getElementById('priceChart').getContext('2d');
@@ -170,9 +173,52 @@
                     }
 
                     // 페이지네이션을 위한 데이터 처리
-                    paginateTable(data);
+                    paginateTable(filteredData);
                 })
                 .catch(error => console.error('데이터를 불러오는 중 오류 발생:', error));
+        }
+
+        // 가장 최근 날짜의 가장 최신 데이터만 표시하고, 그 이전 날짜는 15:00~15:59 데이터를 표시하는 함수
+        function filterDataByDate(data) {
+            const filteredData = [];
+            const recentDate = data[0].조회_시간.split(' ')[0]; // 가장 최근 날짜
+
+            // 1. 가장 최근 날짜의 가장 최신 데이터만 추가
+            filteredData.push(data[0]);
+
+            // 2. 그 이전 날짜의 15:00~15:59 데이터만 추가
+            let currentDate = new Date(recentDate);
+            currentDate.setDate(currentDate.getDate() - 1); // 전일로 이동
+
+            let limit = 0; // 무한 루프 방지
+            while (filteredData.length < itemsPerPage && limit < 20) {
+                const dateString = currentDate.toISOString().split('T')[0];
+
+                // 15:00~15:59 사이 데이터를 찾음
+                let dayData = data.filter(entry => {
+                    const [datePart, timePart] = entry.조회_시간.split(' ');
+                    return datePart === dateString && timePart >= '15:00' && timePart <= '15:59';
+                });
+
+                // 15:00~15:59 데이터가 없으면 가장 최신 데이터 가져옴
+                if (dayData.length === 0) {
+                    dayData = data.filter(entry => entry.조회_시간.split(' ')[0] === dateString);
+                    if (dayData.length > 0) {
+                        dayData = [dayData[dayData.length - 1]]; // 해당 날짜의 가장 최신 데이터
+                    }
+                }
+
+                // 데이터를 찾았으면 추가
+                if (dayData.length > 0) {
+                    filteredData.push(dayData[0]);
+                }
+
+                // 다음 전일자로 이동
+                currentDate.setDate(currentDate.getDate() - 1);
+                limit++;
+            }
+
+            return filteredData;
         }
 
         // 표 데이터를 페이지별로 나누어 표시
