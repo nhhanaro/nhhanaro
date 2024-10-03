@@ -93,8 +93,8 @@
                     const woohPrices = data.map(entry => parseInt(entry.우현상품권.replace(/,/g, '')));
                     const wooticketPrices = data.map(entry => parseInt(entry.우천상품권.replace(/,/g, '')));
 
-                    // 차트를 그리기 전에 기존 차트가 있는지 확인하고, 있으면 삭제
-                    if (window.priceChart && typeof window.priceChart.destroy === 'function') {
+                    // 차트 그리기 전, 차트 객체가 이미 생성되었는지 확인 후 제거
+                    if (typeof window.priceChart !== 'undefined' && window.priceChart !== null) {
                         window.priceChart.destroy();  // 기존 차트를 제거
                     }
 
