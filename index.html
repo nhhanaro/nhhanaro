@@ -102,6 +102,7 @@
         let priceChart = null;
         let currentPage = 0;
         const itemsPerPage = 7; // 페이지당 표시할 항목 수
+        let filteredData = []; // 필터링된 데이터 저장소
 
         // 데이터를 로드하고 표와 차트를 업데이트하는 함수
         function loadData() {
@@ -117,7 +118,7 @@
                     data.sort((a, b) => new Date(b.조회_시간) - new Date(a.조회_시간));
 
                     // 가장 최근 날짜의 최신 데이터만 포함하고, 그 이전 날짜는 15:00~15:59 사이의 데이터만 포함하는 함수
-                    const filteredData = filterDataByDate(data);
+                    filteredData = filterDataByDate(data);
 
                     // 그래프용 데이터 준비 (왼쪽 -> 오른쪽으로 흐르도록 reverse 사용)
                     const labels = filteredData.map(entry => entry.조회_시간.split(' ')[0]).reverse();
@@ -172,26 +173,26 @@
                         priceChart.update();
                     }
 
-                    // 페이지네이션을 위한 데이터 처리
-                    paginateTable(filteredData);
+                    // 첫 페이지 데이터 출력
+                    paginateTable();
                 })
                 .catch(error => console.error('데이터를 불러오는 중 오류 발생:', error));
         }
 
         // 가장 최근 날짜의 가장 최신 데이터만 표시하고, 그 이전 날짜는 15:00~15:59 데이터를 표시하는 함수
         function filterDataByDate(data) {
-            const filteredData = [];
+            const filtered = [];
             const recentDate = data[0].조회_시간.split(' ')[0]; // 가장 최근 날짜
 
             // 1. 가장 최근 날짜의 가장 최신 데이터만 추가
-            filteredData.push(data[0]);
+            filtered.push(data[0]);
 
             // 2. 그 이전 날짜의 15:00~15:59 데이터만 추가
             let currentDate = new Date(recentDate);
             currentDate.setDate(currentDate.getDate() - 1); // 전일로 이동
 
             let limit = 0; // 무한 루프 방지
-            while (filteredData.length < itemsPerPage && limit < 20) {
+            while (filtered.length < data.length && limit < 20) {
                 const dateString = currentDate.toISOString().split('T')[0];
 
                 // 15:00~15:59 사이 데이터를 찾음
@@ -210,7 +211,7 @@
 
                 // 데이터를 찾았으면 추가
                 if (dayData.length > 0) {
-                    filteredData.push(dayData[0]);
+                    filtered.push(dayData[0]);
                 }
 
                 // 다음 전일자로 이동
@@ -218,17 +219,17 @@
                 limit++;
             }
 
-            return filteredData;
+            return filtered;
         }
 
         // 표 데이터를 페이지별로 나누어 표시
-        function paginateTable(data) {
+        function paginateTable() {
             const tableBody = document.querySelector('#dataTable tbody');
             tableBody.innerHTML = ''; // 기존 데이터를 지움
 
             const start = currentPage * itemsPerPage;
-            const end = start + itemsPerPage;
-            const pageData = data.slice(start, end);
+            const end = Math.min(start + itemsPerPage, filteredData.length);
+            const pageData = filteredData.slice(start, end);
 
             pageData.forEach(entry => {
                 const row = document.createElement('tr');
@@ -242,21 +243,21 @@
 
             // 페이지 버튼 상태 업데이트
             document.getElementById('prevBtn').disabled = currentPage === 0;
-            document.getElementById('nextBtn').disabled = end >= data.length;
+            document.getElementById('nextBtn').disabled = end >= filteredData.length;
         }
 
         // 이전 페이지 버튼 클릭
         document.getElementById('prevBtn').addEventListener('click', function() {
             if (currentPage > 0) {
                 currentPage--;
-                loadData();
+                paginateTable();
             }
         });
 
         // 다음 페이지 버튼 클릭
         document.getElementById('nextBtn').addEventListener('click', function() {
             currentPage++;
-            loadData();
+            paginateTable();
         });
 
         // 1시간마다 데이터를 새로 불러와서 업데이트
