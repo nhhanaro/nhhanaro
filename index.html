@@ -69,7 +69,7 @@
         @media (min-width: 601px) {
             canvas {
                 width: 100% !important;
-                height: 300px !important; /* 차트 크기 줄임 */
+                height: 500px !important; /* 차트 크기를 더 키움 */
             }
         }
     </style>
@@ -174,6 +174,42 @@
                 .catch(error => console.error('데이터를 불러오는 중 오류 발생:', error));
         }
 
+        // 전일 데이터 필터링 로직
+        function getPreviousDayData(data, currentDate) {
+            let filteredData = [];
+            let limit = 0; // 무한 루프 방지
+
+            // 전일 데이터(15:00-15:59) 필터링
+            while (filteredData.length === 0 && limit < 20) {
+                const dateString = currentDate.toISOString().split('T')[0];
+
+                // 15:00~15:59 사이 데이터를 먼저 찾음
+                let dayData = data.filter(entry => {
+                    const [datePart, timePart] = entry.조회_시간.split(' ');
+                    return datePart === dateString && timePart >= '15:00' && timePart <= '15:59';
+                });
+
+                // 15:00~15:59 데이터가 없으면 가장 최신 데이터 가져옴
+                if (dayData.length === 0) {
+                    dayData = data.filter(entry => entry.조회_시간.split(' ')[0] === dateString);
+                    if (dayData.length > 0) {
+                        dayData = [dayData[dayData.length - 1]]; // 해당 날짜의 가장 최신 데이터
+                    }
+                }
+
+                // 데이터를 찾았으면 추가
+                if (dayData.length > 0) {
+                    filteredData.push(dayData[0]);
+                }
+
+                // 다음 전일자로 이동
+                currentDate.setDate(currentDate.getDate() - 1);
+                limit++;
+            }
+
+            return filteredData;
+        }
+
         // 표 데이터를 페이지별로 나누어 표시
         function paginateTable(data) {
             const tableBody = document.querySelector('#dataTable tbody');
@@ -183,7 +219,16 @@
             const end = start + itemsPerPage;
             const pageData = data.slice(start, end);
 
-            pageData.forEach(entry => {
+            // 최근 일자의 데이터는 맨 위, 그다음 전일 15:00 - 15:59 데이터를 표시
+            const todayData = [pageData[0]]; // 첫 번째 행에 최근 데이터
+            let currentDate = new Date(todayData[0].조회_시간.split(' ')[0]);
+            currentDate.setDate(currentDate.getDate() - 1); // 전일자로 설정
+
+            const previousDayData = getPreviousDayData(data, currentDate); // 전일자 데이터 찾기
+
+            const displayData = [...todayData, ...previousDayData]; // 오늘 데이터 + 전일 데이터로 구성
+
+            displayData.forEach(entry => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${entry.조회_시간}</td>
@@ -213,8 +258,8 @@
         });
 
         // 1시간마다 데이터를 새로 불러와서 업데이트
-        setInterval(loadData, 3600000);
-        loadData(); // 페이지 로드 시 즉시 데이터를 로드
+        setInterval(loadData, 3600000);  // 1시간마다 새로고침
+        loadData();  // 페이지 로드 시 즉시 데이터를 로드
     </script>
 </body>
 </html>
