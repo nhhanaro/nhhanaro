@@ -3,26 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>테스트: NH GIFT CARD</title>
+    <title>NH GIFT CARD(10만원)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        /* 반응형 디자인을 위한 설정 */
+        @media (max-width: 600px) {
+            th, td {
+                padding: 8px;
+            }
+
+            canvas {
+                width: 100% !important;
+                height: auto !important;
+            }
+        }
+
+        /* 큰 화면에서 보기 좋도록 그래프 크기 설정 */
+        @media (min-width: 601px) {
+            canvas {
+                width: 100% !important;
+                height: 400px !important;
+            }
+        }
+    </style>
 </head>
 <body>
     <h1>NH GIFT CARD(10만원)</h1>
 
-    <script>
-        // 데이터를 로드하는 단순 테스트
-        function loadData() {
-            console.log("데이터 로드 시도 중...");
+    <!-- JSON 데이터를 표로 보여줄 부분 -->
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>조회 시간</th>
+                <th>우현상품권</th>
+                <th>우천상품권</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
 
+    <!-- 그래프를 그릴 부분 -->
+    <canvas id="priceChart"></canvas>
+
+    <script>
+        // 데이터를 로드하고 표와 차트를 업데이트하는 함수
+        function loadData() {
             fetch('data.json')
                 .then(response => response.json())
                 .then(data => {
-                    console.log("데이터 로드 성공:", data);  // 데이터 출력
+                    if (!data || data.length === 0) {
+                        console.error('데이터가 없습니다.');
+                        return;
+                    }
+
+                    // 데이터 로드 성공 확인
+                    console.log('데이터 로드 성공:', data);
+
+                    // 최신 데이터와 15:00 ~ 15:59 조건의 데이터만 추출
+                    const latestEntry = data[data.length - 1];  // 최신 데이터
+                    const filteredForTable = [latestEntry];  // 최신 데이터를 첫 번째로 추가
+
+                    // 전일 데이터를 15:00 ~ 15:59 조건에 맞는 항목만 필터링
+                    const todayDate = latestEntry.조회_시간.split(' ')[0];  // 최신 날짜 추출
+                    const previousDay = new Date(todayDate);
+                    previousDay.setDate(previousDay.getDate() - 1);
+                    const previousDayStr = previousDay.toISOString().split('T')[0];  // 전일 날짜 문자열
+
+                    const filteredPreviousDay = data.filter(entry => {
+                        const [datePart, timePart] = entry.조회_시간.split(' ');
+                        return datePart === previousDayStr && timePart >= '15:00' && timePart <= '15:59';
+                    });
+
+                    // 전일 데이터를 추가 (필터링된 결과가 있는 경우)
+                    if (filteredPreviousDay.length > 0) {
+                        filteredForTable.push(filteredPreviousDay[filteredPreviousDay.length - 1]);  // 전일 마지막 데이터만 추가
+                    }
+
+                    // 표에 데이터를 추가
+                    const tableBody = document.querySelector('#dataTable tbody');
+                    tableBody.innerHTML = '';  // 기존 데이터를 지움
+                    filteredForTable.forEach(entry => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${entry.조회_시간}</td>
+                            <td>${entry.우현상품권}</td>
+                            <td>${entry.우천상품권}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+
+                    // 차트 데이터 준비
+                    const labels = data.map(entry => entry.조회_시간.split(' ')[0]);  // 날짜 부분만 사용
+                    const woohPrices = data.map(entry => parseInt(entry.우현상품권.replace(/,/g, '')));
+                    const wooticketPrices = data.map(entry => parseInt(entry.우천상품권.replace(/,/g, '')));
+
+                    // 기존 차트가 있다면 제거
+                    const ctx = document.getElementById('priceChart').getContext('2d');
+                    if (window.priceChart instanceof Chart) {
+                        window.priceChart.destroy();
+                    }
+
+                    // 차트 그리기
+                    window.priceChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: '우현상품권 가격',
+                                    data: woohPrices,
+                                    borderColor: 'blue',
+                                    fill: false
+                                },
+                                {
+                                    label: '우천상품권 가격',
+                                    data: wooticketPrices,
+                                    borderColor: 'green',
+                                    fill: false
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,  // 차트 크기 유연성 증가
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: '날짜'
+                                    }
+                                },
+                                y: {
+                                    title: {
+                                        display: true,
+                                        text: '가격 (원)'
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    console.log('테이블 및 차트 업데이트 완료');
                 })
                 .catch(error => console.error('데이터를 불러오는 중 오류 발생:', error));
         }
 
-        // 페이지 로드 시 즉시 데이터를 로드
-        loadData();
+        // 데이터 로드 및 렌더링
+        loadData();  // 페이지 로드 시 즉시 데이터를 로드
     </script>
 </body>
 </html>
