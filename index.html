@@ -79,7 +79,7 @@
 
         // 데이터를 로드하고 표와 차트를 업데이트하는 함수
         function loadData() {
-            fetch('data.json?' + new Date().getTime()) // 캐시 방지 매개변수 추가
+            fetch('data.json', { cache: 'no-store' }) // 캐시 방지 헤더 추가
                 .then(response => response.json())
                 .then(data => {
                     if (!data || data.length === 0) {
@@ -87,58 +87,62 @@
                         return;
                     }
 
-                    // id를 기준으로 최신순으로 정렬
-                    data.sort((a, b) => b.id - a.id); // 최신 데이터가 맨 위로 오게 정렬
+                    // 조회 시간 기준으로 최신순으로 정렬
+                    data.sort((a, b) => new Date(b.조회_시간) - new Date(a.조회_시간));
 
                     // 그래프용 데이터 준비
                     const labels = data.map(entry => entry.조회_시간.split(' ')[0]); // 날짜 기준 라벨
                     const woohPrices = data.map(entry => parseInt(entry.우현상품권.replace(/,/g, '')));
                     const wooticketPrices = data.map(entry => parseInt(entry.우천상품권.replace(/,/g, '')));
 
-                    // 차트를 다시 그리기 전에 기존 차트가 있으면 제거
-                    if (priceChart !== null) {
-                        priceChart.destroy();
-                    }
-
-                    // 차트 그리기
+                    // 차트가 이미 있으면 데이터 업데이트, 없으면 새로 생성
                     const ctx = document.getElementById('priceChart').getContext('2d');
-                    priceChart = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [
-                                {
-                                    label: '우현상품권 가격',
-                                    data: woohPrices,
-                                    borderColor: 'blue',
-                                    fill: false
-                                },
-                                {
-                                    label: '우천상품권 가격',
-                                    data: wooticketPrices,
-                                    borderColor: 'green',
-                                    fill: false
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            scales: {
-                                x: {
-                                    title: {
-                                        display: true,
-                                        text: '날짜'
+                    if (priceChart === null) {
+                        priceChart = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: [
+                                    {
+                                        label: '우현상품권 가격',
+                                        data: woohPrices,
+                                        borderColor: 'blue',
+                                        fill: false
+                                    },
+                                    {
+                                        label: '우천상품권 가격',
+                                        data: wooticketPrices,
+                                        borderColor: 'green',
+                                        fill: false
                                     }
-                                },
-                                y: {
-                                    title: {
-                                        display: true,
-                                        text: '가격 (원)'
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                aspectRatio: 2, // 반응형 차트 비율 설정
+                                scales: {
+                                    x: {
+                                        title: {
+                                            display: true,
+                                            text: '날짜'
+                                        }
+                                    },
+                                    y: {
+                                        title: {
+                                            display: true,
+                                            text: '가격 (원)'
+                                        }
                                     }
                                 }
                             }
-                        }
-                    });
+                        });
+                    } else {
+                        // 차트가 이미 있으면 데이터 업데이트
+                        priceChart.data.labels = labels;
+                        priceChart.data.datasets[0].data = woohPrices;
+                        priceChart.data.datasets[1].data = wooticketPrices;
+                        priceChart.update();
+                    }
 
                     // 최신 데이터 및 전일 15:00~15:59 사이의 데이터 필터링
                     const latestEntry = data[0]; // 최신 데이터는 id가 가장 큰 데이터
@@ -149,7 +153,9 @@
                     let currentDate = new Date(todayDate);
                     currentDate.setDate(currentDate.getDate() - 1); // 전일로 설정
 
-                    while (filteredForTable.length < 10) { // 최대 10개 데이터 가져옴
+                    // 날짜 데이터를 안전하게 필터링하기 위한 로직 추가
+                    let limit = 0; // 무한 루프 방지를 위한 제한 변수
+                    while (filteredForTable.length < 10 && limit < 20) { // 최대 10개 데이터 가져오되 제한 설정
                         const dateString = currentDate.toISOString().split('T')[0];
 
                         // 15:00~15:59 사이 데이터를 먼저 찾음
@@ -172,6 +178,7 @@
                         }
 
                         currentDate.setDate(currentDate.getDate() - 1); // 이전 날짜로 이동
+                        limit++; // 무한 루프 방지를 위한 카운터
                     }
 
                     // 표에 표시할 데이터 준비
