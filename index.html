@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+    <!-- 헤드 부분은 기존과 동일 -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NH GIFT CARD(10만원)</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        /* 스타일은 기존과 동일합니다. */
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
@@ -79,8 +81,8 @@
         <thead>
             <tr>
                 <th>조회 시간</th>
-                <th>우현상품권</th>
-                <th>우천상품권</th>
+                <th><a href="https://www.wooh.co.kr/shop/item.php?it_id=1595825248" target="_blank">우현상품권</a></th>
+                <th><a href="http://www.wooticket.com/price_status.php" target="_blank">우천상품권</a></th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -109,7 +111,7 @@
                     }
 
                     data.sort((a, b) => new Date(b.조회_시간) - new Date(a.조회_시간));
-                    filteredData = filterDataByDate(data);
+                    filteredData = filterDataByDate(data); // 필터링된 데이터를 사용
 
                     const labels = filteredData.map(entry => entry.조회_시간.split(' ')[0]).reverse();
                     const woohPrices = filteredData.map(entry => parseInt(entry.우현상품권.replace(/,/g, ''))).reverse();
@@ -169,22 +171,21 @@
 
         function filterDataByDate(data) {
             const filtered = [];
-            const recentDate = data[0].조회_시간.split(' ')[0];
 
-            filtered.push(data[0]);
+            // 데이터에서 모든 고유한 날짜를 추출
+            const dates = [...new Set(data.map(entry => entry.조회_시간.split(' ')[0]))];
 
-            let currentDate = new Date(recentDate);
-            currentDate.setDate(currentDate.getDate() - 1);
+            // 날짜를 최신순으로 정렬
+            dates.sort((a, b) => new Date(b) - new Date(a));
 
-            let limit = 0;
-            while (filtered.length < data.length && limit < 20) {
-                const dateString = currentDate.toISOString().split('T')[0];
-
+            dates.forEach(dateString => {
+                // 해당 날짜의 15:00~15:59 사이의 데이터 검색
                 let dayData = data.filter(entry => {
                     const [datePart, timePart] = entry.조회_시간.split(' ');
                     return datePart === dateString && timePart >= '15:00' && timePart <= '15:59';
                 });
 
+                // 해당 시간대의 데이터가 없으면, 해당 날짜의 마지막 데이터 사용
                 if (dayData.length === 0) {
                     dayData = data.filter(entry => entry.조회_시간.split(' ')[0] === dateString);
                     if (dayData.length > 0) {
@@ -192,13 +193,11 @@
                     }
                 }
 
+                // 데이터가 있으면 필터링된 데이터에 추가
                 if (dayData.length > 0) {
                     filtered.push(dayData[0]);
                 }
-
-                currentDate.setDate(currentDate.getDate() - 1);
-                limit++;
-            }
+            });
 
             return filtered;
         }
@@ -244,8 +243,10 @@
         });
 
         document.getElementById('nextBtn').addEventListener('click', function() {
-            currentPage++;
-            paginateTable();
+            if ((currentPage + 1) * itemsPerPage < filteredData.length) {
+                currentPage++;
+                paginateTable();
+            }
         });
 
         setInterval(loadData, 3600000);
