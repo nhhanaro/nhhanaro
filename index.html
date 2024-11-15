@@ -170,37 +170,45 @@
         }
 
         function filterDataByDate(data) {
+            // 데이터 시간 기준으로 내림차순 정렬
+            data.sort((a, b) => new Date(b.조회_시간) - new Date(a.조회_시간));
+        
             const filtered = [];
-
-            // 데이터에서 모든 고유한 날짜를 추출
-            const dates = [...new Set(data.map(entry => entry.조회_시간.split(' ')[0]))];
-
-            // 날짜를 최신순으로 정렬
-            dates.sort((a, b) => new Date(b) - new Date(a));
-
-            dates.forEach(dateString => {
-                // 해당 날짜의 15:00~15:59 사이의 데이터 검색
-                let dayData = data.filter(entry => {
-                    const [datePart, timePart] = entry.조회_시간.split(' ');
-                    return datePart === dateString && timePart >= '15:00' && timePart <= '15:59';
-                });
-
-                // 해당 시간대의 데이터가 없으면, 해당 날짜의 마지막 데이터 사용
-                if (dayData.length === 0) {
-                    dayData = data.filter(entry => entry.조회_시간.split(' ')[0] === dateString);
-                    if (dayData.length > 0) {
-                        dayData = [dayData[dayData.length - 1]];
+            const uniqueDates = new Set();
+        
+            // 최신 날짜의 최신 데이터 추가 (맨 위의 데이터)
+            filtered.push(data[0]);
+            uniqueDates.add(data[0].조회_시간.split(' ')[0]);
+        
+            // 날짜별로 15:00~15:59 데이터 선택
+            const otherData = data.slice(1); // 첫 데이터를 제외한 나머지 처리
+            otherData.forEach(entry => {
+                const datePart = entry.조회_시간.split(' ')[0];
+        
+                if (!uniqueDates.has(datePart)) {
+                    // 15:00~15:59 사이의 데이터 필터링
+                    const timeFiltered = otherData.filter(item => {
+                        const [date, time] = item.조회_시간.split(' ');
+                        return date === datePart && time >= '15:00' && time <= '15:59';
+                    });
+        
+                    // 조건에 맞는 데이터가 있으면 추가, 없으면 해당 날짜의 마지막 데이터 사용
+                    if (timeFiltered.length > 0) {
+                        filtered.push(timeFiltered[0]); // 15:00~15:59 중 최신 데이터
+                    } else {
+                        const lastData = otherData.filter(item => item.조회_시간.split(' ')[0] === datePart).pop();
+                        if (lastData) {
+                            filtered.push(lastData);
+                        }
                     }
-                }
-
-                // 데이터가 있으면 필터링된 데이터에 추가
-                if (dayData.length > 0) {
-                    filtered.push(dayData[0]);
+        
+                    uniqueDates.add(datePart); // 해당 날짜 처리 완료
                 }
             });
-
+        
             return filtered;
         }
+        
 
         function paginateTable() {
             const tableBody = document.querySelector('#dataTable tbody');
