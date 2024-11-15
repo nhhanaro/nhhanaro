@@ -176,27 +176,28 @@
             const filtered = [];
             const uniqueDates = new Set();
         
-            // 최신 날짜의 최신 데이터 추가 (맨 위의 데이터)
-            filtered.push(data[0]);
-            uniqueDates.add(data[0].조회_시간.split(' ')[0]);
+            // 최신 날짜의 최신 데이터를 추가 (맨 위 데이터)
+            const latestDate = data[0].조회_시간.split(' ')[0]; // 가장 최신 날짜 추출
+            const latestData = data.find(entry => entry.조회_시간.split(' ')[0] === latestDate);
+            filtered.push(latestData);
+            uniqueDates.add(latestDate); // 최신 날짜는 처리 완료
         
-            // 날짜별로 15:00~15:59 데이터 선택
-            const otherData = data.slice(1); // 첫 데이터를 제외한 나머지 처리
-            otherData.forEach(entry => {
-                const datePart = entry.조회_시간.split(' ')[0];
+            // 나머지 날짜에 대해 15:00~15:59 데이터 선택
+            data.forEach(entry => {
+                const [datePart, timePart] = entry.조회_시간.split(' ');
         
                 if (!uniqueDates.has(datePart)) {
                     // 15:00~15:59 사이의 데이터 필터링
-                    const timeFiltered = otherData.filter(item => {
-                        const [date, time] = item.조회_시간.split(' ');
-                        return date === datePart && time >= '15:00' && time <= '15:59';
+                    const timeFiltered = data.filter(item => {
+                        const [itemDate, itemTime] = item.조회_시간.split(' ');
+                        return itemDate === datePart && itemTime >= '15:00' && itemTime <= '15:59';
                     });
         
                     // 조건에 맞는 데이터가 있으면 추가, 없으면 해당 날짜의 마지막 데이터 사용
                     if (timeFiltered.length > 0) {
                         filtered.push(timeFiltered[0]); // 15:00~15:59 중 최신 데이터
                     } else {
-                        const lastData = otherData.filter(item => item.조회_시간.split(' ')[0] === datePart).pop();
+                        const lastData = data.filter(item => item.조회_시간.split(' ')[0] === datePart).pop();
                         if (lastData) {
                             filtered.push(lastData);
                         }
@@ -208,6 +209,7 @@
         
             return filtered;
         }
+        
         
 
         function paginateTable() {
