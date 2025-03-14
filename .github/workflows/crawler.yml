@@ -1,36 +1,25 @@
-name: Crawler Workflow
+name: Crawl and Save Data
 
 on:
-  schedule:
-    - cron: "0 */3 * * *" # This runs every 3 hours
-  workflow_dispatch: # Allows manual triggering of the workflow
+  workflow_dispatch:  # 수동으로 실행 가능
 
 jobs:
   crawl:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # 실행 환경
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
-
+        uses: actions/checkout@v3  # 리포지토리 코드 가져오기
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.9" # Specify the Python version you want to use
-
+          python-version: '3.x'  # 파이썬 버전 설정
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
+          pip install cloudscraper beautifulsoup4  # 필요한 라이브러리 설치
       - name: Run crawler
-        run: python crawler.py
-
-      - name: Commit and push crawled_data.db and data.json
-        run: |
-          git config --global user.name 'github-actions'
-          git config --global user.email 'github-actions@github.com'
-          git add crawled_data.db data.json
-          git commit -m "Update database and JSON data"
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Use GitHub token for authentication
+        run: python crawl_and_save.py  # 크롤링 스크립트 실행
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3  # 생성된 파일 업로드
+        with:
+          name: data-files
+          path: data_*.json  # JSON 파일만 업로드
